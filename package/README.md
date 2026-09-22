@@ -2,6 +2,8 @@
 
 Per-user file storage for aux4 Cloud applications. A scope chooses the storage policy once; each authenticated user receives and consumes an independent allocation.
 
+This is a hosted Cloud package. Deploy it to a dedicated VM from aux4 Hub; it is not available as a local package download.
+
 ## Plans
 
 - aux4 Cloud subscribers: 1 GiB per user is included by the Cloud plan.
