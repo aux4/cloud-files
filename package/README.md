@@ -7,9 +7,11 @@ This is a hosted Cloud package. Deploy it to a dedicated VM from aux4 Hub; it is
 ## Plans
 
 - aux4 Cloud subscribers: 1 GiB per user is included by the Cloud plan.
-- Small: 10 GiB per user. The initial `$1/month` price is a dev-market validation price, not final production pricing.
+- Small: 10 GiB per user for `$1/month`.
+- Medium: 50 GiB per user for `$5/month`.
+- Large: 100 GiB per user for `$10/month`.
 
-The paid tier replaces the included allowance; allowances do not stack.
+The selected paid tier replaces the included allowance; allowances do not stack. These are dev-market validation prices, not final production pricing.
 
 ## Usage
 

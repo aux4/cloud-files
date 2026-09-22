@@ -14,6 +14,22 @@
       "limits": {
         "storage-gb": 10
       }
+    },
+    "medium": {
+      "price": {
+        "monthly": 5
+      },
+      "limits": {
+        "storage-gb": 50
+      }
+    },
+    "large": {
+      "price": {
+        "monthly": 10
+      },
+      "limits": {
+        "storage-gb": 100
+      }
     }
   }
 }
