@@ -1,10 +1,19 @@
 {
   "scope": "aux4",
   "name": "cloud-files",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "cloud",
   "cloud": {
-    "deployment": "new-vm"
+    "deployment": "new-vm",
+    "machine": {
+      "name": "files",
+      "size": "sm",
+      "disk": 1,
+      "tenantCapabilities": {
+        "packages": false,
+        "webhooks": false
+      }
+    }
   },
   "description": "Per-user file storage for aux4 Cloud applications",
   "license": "Apache-2.0",
@@ -21,20 +30,6 @@
       "name": "main",
       "commands": [
         {
-          "name": "cloud-files",
-          "execute": [
-            "profile:cloud-files"
-          ],
-          "help": {
-            "text": "Manage your per-user files in an aux4 Cloud VM"
-          }
-        }
-      ]
-    },
-    {
-      "name": "cloud-files",
-      "commands": [
-        {
           "name": "list",
           "execute": [
             "aux4 aux4 cloud files list values(package, scope, path, apiUrl)"
@@ -42,10 +37,10 @@
           "help": {
             "text": "List files in a cloud VM",
             "variables": [
-              { "name": "package", "text": "VM name" },
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
+              { "name": "package", "text": "VM name", "default": "files", "private": true },
+              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE", "private": true },
               { "name": "path", "text": "Directory path", "default": "" },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud", "private": true }
             ]
           }
         },
@@ -57,10 +52,10 @@
           "help": {
             "text": "Read a text file from a cloud VM",
             "variables": [
-              { "name": "package", "text": "VM name" },
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
+              { "name": "package", "text": "VM name", "default": "files", "private": true },
+              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE", "private": true },
               { "name": "path", "text": "File path", "arg": true },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud", "private": true }
             ]
           }
         },
@@ -72,12 +67,12 @@
           "help": {
             "text": "Upload or replace a file in a cloud VM",
             "variables": [
-              { "name": "package", "text": "VM name" },
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
+              { "name": "package", "text": "VM name", "default": "files", "private": true },
+              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE", "private": true },
               { "name": "path", "text": "Remote file path" },
               { "name": "file", "text": "Local file path", "default": "" },
               { "name": "retention", "text": "Retention in days (0 = never expire)", "default": "30" },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud", "private": true }
             ]
           }
         },
@@ -90,10 +85,10 @@
           "help": {
             "text": "Delete a file from a cloud VM",
             "variables": [
-              { "name": "package", "text": "VM name" },
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
+              { "name": "package", "text": "VM name", "default": "files", "private": true },
+              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE", "private": true },
               { "name": "path", "text": "File path" },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud", "private": true }
             ]
           }
         }

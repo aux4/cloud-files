@@ -4,6 +4,10 @@ Per-user file storage for aux4 Cloud applications. A scope chooses the storage p
 
 This is a hosted Cloud package. Deploy it to a dedicated VM from aux4 Hub; it is not available as a local package download.
 
+## Deployment
+
+Deploy from aux4 Hub. The package creates one managed VM named `files` with fixed runtime resources. There is no separate VM configuration or regular aux4 Cloud VM charge, and the VM cannot accept additional packages or user-managed webhooks.
+
 ## Plans
 
 - aux4 Cloud subscribers: 1 GiB per user is included by the Cloud plan.
@@ -15,16 +19,16 @@ The selected paid tier replaces the included allowance; allowances do not stack.
 
 ## Usage
 
-The package exposes the existing authenticated Cloud file operations under a focused command group:
+The VM exposes file operations directly. From any machine with `aux4/cloud` installed, call the fixed `files` VM:
 
 ```bash
-aux4 cloud-files list --package agent-chat
-aux4 cloud-files upload --package agent-chat --path notes/today.txt --file ./today.txt
-aux4 cloud-files get --package agent-chat notes/today.txt
-aux4 cloud-files delete --package agent-chat --path notes/today.txt
+aux4 cloud files list
+aux4 cloud files get notes/today.txt
+aux4 cloud files upload
+aux4 cloud files delete notes/today.txt
 ```
 
-Set `AUX4_CLOUD_SCOPE` to select a scope and `AUX4_CLOUD_API_URL` to target dev.
+Set `AUX4_CLOUD_SCOPE` to select the scope. The VM name is always `files`.
 
 ## Quota model
 

@@ -1,31 +1,31 @@
-# cloud-files
+# files VM commands
 
-## command group
+## direct command surface
 
-### should expose the focused cloud file commands
-
-```execute
-aux4 cloud-files --help
-```
-
-```expect:partial
-Manage your per-user files in an aux4 Cloud VM
-```
-
-### should expose list through the cloud dependency
+### should expose list directly
 
 ```execute
-aux4 cloud-files list --help
+aux4 list --help
 ```
 
 ```expect:partial
 List files in a cloud VM
 ```
 
-### should expose upload through the cloud dependency
+### should hide the fixed VM plumbing
 
 ```execute
-aux4 cloud-files upload --help
+aux4 list --help
+```
+
+```expect:regex
+^(?!.*--package)(?!.*--scope)(?!.*--apiUrl)[\s\S]*$
+```
+
+### should expose upload directly
+
+```execute
+aux4 upload --help
 ```
 
 ```expect:partial
