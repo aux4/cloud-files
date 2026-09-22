@@ -1,9 +1,15 @@
 {
   "schemaVersion": 1,
   "metrics": {
-    "storage-gb": {
+    "storage-bytes": {
       "label": "Cloud file storage per user",
-      "type": "gauge"
+      "type": "gauge",
+      "unit": {
+        "base": "byte",
+        "display": "GB",
+        "baseUnitsPerDisplayUnit": 1000000000,
+        "decimals": 2
+      }
     }
   },
   "plans": {
@@ -12,7 +18,7 @@
         "monthly": 1
       },
       "limits": {
-        "storage-gb": 10
+        "storage-bytes": 10
       }
     },
     "medium": {
@@ -20,7 +26,7 @@
         "monthly": 5
       },
       "limits": {
-        "storage-gb": 50
+        "storage-bytes": 50
       }
     },
     "large": {
@@ -28,7 +34,7 @@
         "monthly": 10
       },
       "limits": {
-        "storage-gb": 100
+        "storage-bytes": 100
       }
     }
   }

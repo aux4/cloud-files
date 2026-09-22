@@ -10,10 +10,10 @@ Deploy from aux4 Hub. The package creates one managed VM named `files` with fixe
 
 ## Plans
 
-- aux4 Cloud subscribers: 1 GiB per user is included by the Cloud plan.
-- Small: 10 GiB per user for `$1/month`.
-- Medium: 50 GiB per user for `$5/month`.
-- Large: 100 GiB per user for `$10/month`.
+- aux4 Cloud subscribers: 1 GB per user is included by the Cloud plan.
+- Small: 10 GB per user for `$1/month`.
+- Medium: 50 GB per user for `$5/month`.
+- Large: 100 GB per user for `$10/month`.
 
 The selected paid tier replaces the included allowance; allowances do not stack. These are dev-market validation prices, not final production pricing.
 
@@ -32,6 +32,6 @@ Set `AUX4_CLOUD_SCOPE` to select the scope. The VM name is always `files`.
 
 ## Quota model
 
-Storage is a current gauge, not a monthly event counter. The Cloud API derives identity from the signed-in subject, measures the user's objects across every VM in the scope, and refuses an upload when its resulting total would exceed the active plan. Reads and deletes remain available after cancellation or expiry.
+Storage is a current gauge, not a monthly event counter. Plans are authored in decimal GB (`1 GB = 1,000,000,000 bytes`), while telemetry and enforcement use exact bytes. The Cloud API derives identity from the signed-in subject, measures the user's objects across every VM in the scope, and refuses an upload when its resulting total would exceed the active plan. Reads and deletes remain available after cancellation or expiry.
 
 Packages using Cloud Files must call the authenticated Cloud file API on behalf of the current user. They must never accept an arbitrary user id as storage authority.
