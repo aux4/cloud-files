@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "metrics": {
+    "storage-gb": {
+      "label": "Cloud file storage per user",
+      "type": "gauge"
+    }
+  },
+  "plans": {
+    "small": {
+      "price": {
+        "monthly": 1
+      },
+      "limits": {
+        "storage-gb": 10
+      }
+    }
+  }
+}

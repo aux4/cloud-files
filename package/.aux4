@@ -1,0 +1,99 @@
+{
+  "scope": "aux4",
+  "name": "cloud-files",
+  "version": "0.1.0",
+  "description": "Per-user file storage for aux4 Cloud applications",
+  "license": "Apache-2.0",
+  "tags": [
+    "cloud",
+    "files",
+    "storage"
+  ],
+  "dependencies": [
+    "aux4/cloud@1.2.0"
+  ],
+  "profiles": [
+    {
+      "name": "main",
+      "commands": [
+        {
+          "name": "cloud-files",
+          "execute": [
+            "profile:cloud-files"
+          ],
+          "help": {
+            "text": "Manage your per-user files in an aux4 Cloud VM"
+          }
+        }
+      ]
+    },
+    {
+      "name": "cloud-files",
+      "commands": [
+        {
+          "name": "list",
+          "execute": [
+            "aux4 aux4 cloud files list values(package, scope, path, apiUrl)"
+          ],
+          "help": {
+            "text": "List files in a cloud VM",
+            "variables": [
+              { "name": "package", "text": "VM name" },
+              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
+              { "name": "path", "text": "Directory path", "default": "" },
+              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+            ]
+          }
+        },
+        {
+          "name": "get",
+          "execute": [
+            "aux4 aux4 cloud files get values(package, scope, path, apiUrl)"
+          ],
+          "help": {
+            "text": "Read a text file from a cloud VM",
+            "variables": [
+              { "name": "package", "text": "VM name" },
+              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
+              { "name": "path", "text": "File path", "arg": true },
+              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+            ]
+          }
+        },
+        {
+          "name": "upload",
+          "execute": [
+            "stdin:aux4 aux4 cloud files upload values(package, scope, path, file, retention, apiUrl)"
+          ],
+          "help": {
+            "text": "Upload or replace a file in a cloud VM",
+            "variables": [
+              { "name": "package", "text": "VM name" },
+              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
+              { "name": "path", "text": "Remote file path" },
+              { "name": "file", "text": "Local file path", "default": "" },
+              { "name": "retention", "text": "Retention in days (0 = never expire)", "default": "30" },
+              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+            ]
+          }
+        },
+        {
+          "name": "delete",
+          "execute": [
+            "confirm:Are you sure you want to delete this file?",
+            "aux4 aux4 cloud files delete values(package, scope, path, apiUrl)"
+          ],
+          "help": {
+            "text": "Delete a file from a cloud VM",
+            "variables": [
+              { "name": "package", "text": "VM name" },
+              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
+              { "name": "path", "text": "File path" },
+              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
