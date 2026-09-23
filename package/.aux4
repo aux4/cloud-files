@@ -1,7 +1,7 @@
 {
   "scope": "aux4",
   "name": "cloud-files",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "type": "cloud",
   "cloud": {
     "deployment": "new-vm",
@@ -23,7 +23,7 @@
     "storage"
   ],
   "dependencies": [
-    "aux4/cloud@1.2.0"
+    "aux4/cloud@1.2.11"
   ],
   "profiles": [
     {
