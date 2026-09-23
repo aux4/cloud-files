@@ -123,6 +123,7 @@ export function register(engine) {
       } catch (error) {
         this._notify(error.message, "error");
       } finally {
+        if (input) input.value = "";
         this._busy = false;
       }
     }
@@ -147,11 +148,11 @@ export function register(engine) {
         }
         if (!response.ok || result.error) throw new Error(result.error || `Upload failed (${response.status})`);
         this._notify(result.message || `Uploaded ${files.length} file${files.length === 1 ? "" : "s"}`);
-        if (input) input.value = "";
         await this._load();
       } catch (error) {
         this._notify(error.message, "error");
       } finally {
+        if (input) input.value = "";
         this._busy = false;
       }
     }
