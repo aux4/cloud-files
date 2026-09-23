@@ -1,7 +1,7 @@
 {
   "scope": "aux4",
   "name": "cloud-files",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "type": "cloud",
   "cloud": {
     "deployment": "new-vm",
@@ -39,9 +39,24 @@
           "help": {
             "text": "List files in a cloud VM",
             "variables": [
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE", "private": true },
-              { "name": "path", "text": "Directory path", "default": "" },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud", "private": true }
+              {
+                "name": "scope",
+                "text": "Scope",
+                "env": "AUX4_CLOUD_SCOPE",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Directory path",
+                "default": ""
+              },
+              {
+                "name": "apiUrl",
+                "text": "Cloud API base URL",
+                "env": "AUX4_CLOUD_API_URL",
+                "default": "https://api.aux4.cloud",
+                "private": true
+              }
             ]
           }
         },
@@ -53,9 +68,24 @@
           "help": {
             "text": "Read a text file from a cloud VM",
             "variables": [
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE", "private": true },
-              { "name": "path", "text": "File path", "arg": true },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud", "private": true }
+              {
+                "name": "scope",
+                "text": "Scope",
+                "env": "AUX4_CLOUD_SCOPE",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "File path",
+                "arg": true
+              },
+              {
+                "name": "apiUrl",
+                "text": "Cloud API base URL",
+                "env": "AUX4_CLOUD_API_URL",
+                "default": "https://api.aux4.cloud",
+                "private": true
+              }
             ]
           }
         },
@@ -67,11 +97,33 @@
           "help": {
             "text": "Upload or replace a file in a cloud VM",
             "variables": [
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE", "private": true },
-              { "name": "path", "text": "Remote file path" },
-              { "name": "file", "text": "Local file path", "default": "" },
-              { "name": "retention", "text": "Retention in days (0 = never expire)", "default": "30" },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud", "private": true }
+              {
+                "name": "scope",
+                "text": "Scope",
+                "env": "AUX4_CLOUD_SCOPE",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Remote file path"
+              },
+              {
+                "name": "file",
+                "text": "Local file path",
+                "default": ""
+              },
+              {
+                "name": "retention",
+                "text": "Retention in days (0 = never expire)",
+                "default": "30"
+              },
+              {
+                "name": "apiUrl",
+                "text": "Cloud API base URL",
+                "env": "AUX4_CLOUD_API_URL",
+                "default": "https://api.aux4.cloud",
+                "private": true
+              }
             ]
           }
         },
@@ -84,9 +136,23 @@
           "help": {
             "text": "Delete a file from a cloud VM",
             "variables": [
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE", "private": true },
-              { "name": "path", "text": "File path" },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud", "private": true }
+              {
+                "name": "scope",
+                "text": "Scope",
+                "env": "AUX4_CLOUD_SCOPE",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "File path"
+              },
+              {
+                "name": "apiUrl",
+                "text": "Cloud API base URL",
+                "env": "AUX4_CLOUD_API_URL",
+                "default": "https://api.aux4.cloud",
+                "private": true
+              }
             ]
           }
         }
@@ -97,8 +163,12 @@
       "commands": [
         {
           "name": "files",
-          "execute": ["profile:platform:app:files"],
-          "help": { "text": "Browse your aux4 Cloud files" }
+          "execute": [
+            "profile:platform:app:files"
+          ],
+          "help": {
+            "text": "Browse your aux4 Cloud files"
+          }
         }
       ]
     },
@@ -107,21 +177,35 @@
       "commands": [
         {
           "name": "meta",
-          "execute": ["node ${packageDir}/lib/cloud-files-app.mjs meta value(appFile)"],
+          "execute": [
+            "node ${packageDir}/lib/cloud-files-app.mjs meta value(appFile)"
+          ],
           "help": {
             "text": "Return the Files app metadata",
             "variables": [
-              { "name": "appFile", "text": "Bundled app descriptor", "default": "${packageDir}/app.json", "private": true }
+              {
+                "name": "appFile",
+                "text": "Bundled app descriptor",
+                "default": "${packageDir}/app.json",
+                "private": true
+              }
             ]
           }
         },
         {
           "name": "ui",
-          "execute": ["node ${packageDir}/lib/cloud-files-app.mjs ui value(appFile)"],
+          "execute": [
+            "node ${packageDir}/lib/cloud-files-app.mjs ui value(appFile)"
+          ],
           "help": {
             "text": "Return the Files app routes",
             "variables": [
-              { "name": "appFile", "text": "Bundled app descriptor", "default": "${packageDir}/app.json", "private": true }
+              {
+                "name": "appFile",
+                "text": "Bundled app descriptor",
+                "default": "${packageDir}/app.json",
+                "private": true
+              }
             ]
           }
         },
@@ -134,8 +218,17 @@
           "help": {
             "text": "List the signed-in user's files and folders",
             "variables": [
-              { "name": "body", "text": "Request body", "default": "{}", "private": true },
-              { "name": "path", "text": "Folder path", "default": "" }
+              {
+                "name": "body",
+                "text": "Request body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Folder path",
+                "default": ""
+              }
             ]
           }
         },
@@ -149,9 +242,21 @@
           "help": {
             "text": "Create a folder for the signed-in user",
             "variables": [
-              { "name": "body", "text": "Request body", "default": "{}", "private": true },
-              { "name": "path", "text": "Parent folder", "default": "" },
-              { "name": "name", "text": "Folder name" }
+              {
+                "name": "body",
+                "text": "Request body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Parent folder",
+                "default": ""
+              },
+              {
+                "name": "name",
+                "text": "Folder name"
+              }
             ]
           }
         },
@@ -165,9 +270,23 @@
           "help": {
             "text": "Upload files into the signed-in user's current folder",
             "variables": [
-              { "name": "body", "text": "Multipart request body", "default": "{}", "private": true },
-              { "name": "path", "text": "Target folder", "default": "" },
-              { "name": "files", "text": "Uploaded file parts", "default": "[]", "private": true }
+              {
+                "name": "body",
+                "text": "Multipart request body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Target folder",
+                "default": ""
+              },
+              {
+                "name": "files",
+                "text": "Uploaded file parts",
+                "default": "[]",
+                "private": true
+              }
             ]
           }
         },
@@ -180,8 +299,16 @@
           "help": {
             "text": "Delete a file owned by the signed-in user",
             "variables": [
-              { "name": "body", "text": "Request body", "default": "{}", "private": true },
-              { "name": "path", "text": "File path" }
+              {
+                "name": "body",
+                "text": "Request body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "File path"
+              }
             ]
           }
         }
