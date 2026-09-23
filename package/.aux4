@@ -1,7 +1,7 @@
 {
   "scope": "aux4",
   "name": "cloud-files",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "type": "cloud",
   "cloud": {
     "deployment": "new-vm",
@@ -9,6 +9,7 @@
       "name": "files",
       "size": "sm",
       "disk": 1,
+      "type": "api",
       "tenantCapabilities": {
         "packages": false,
         "webhooks": false
@@ -23,7 +24,8 @@
     "storage"
   ],
   "dependencies": [
-    "aux4/cloud@1.2.12"
+    "aux4/cloud@1.2.12",
+    "aux4/platform@1.3.59"
   ],
   "profiles": [
     {
@@ -85,6 +87,101 @@
               { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE", "private": true },
               { "name": "path", "text": "File path" },
               { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud", "private": true }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "platform:app",
+      "commands": [
+        {
+          "name": "files",
+          "execute": ["profile:platform:app:files"],
+          "help": { "text": "Browse your aux4 Cloud files" }
+        }
+      ]
+    },
+    {
+      "name": "platform:app:files",
+      "commands": [
+        {
+          "name": "meta",
+          "execute": ["node ${packageDir}/lib/cloud-files-app.mjs meta value(appFile)"],
+          "help": {
+            "text": "Return the Files app metadata",
+            "variables": [
+              { "name": "appFile", "text": "Bundled app descriptor", "default": "${packageDir}/app.json", "private": true }
+            ]
+          }
+        },
+        {
+          "name": "ui",
+          "execute": ["node ${packageDir}/lib/cloud-files-app.mjs ui value(appFile)"],
+          "help": {
+            "text": "Return the Files app routes",
+            "variables": [
+              { "name": "appFile", "text": "Bundled app descriptor", "default": "${packageDir}/app.json", "private": true }
+            ]
+          }
+        },
+        {
+          "name": "browse",
+          "execute": [
+            "set:path=nvl(body.path, path, '')",
+            "node ${packageDir}/lib/cloud-files-app.mjs browse value(path)"
+          ],
+          "help": {
+            "text": "List the signed-in user's files and folders",
+            "variables": [
+              { "name": "body", "text": "Request body", "default": "{}", "private": true },
+              { "name": "path", "text": "Folder path", "default": "" }
+            ]
+          }
+        },
+        {
+          "name": "create-folder",
+          "execute": [
+            "set:path=nvl(body.path, path, '')",
+            "set:name=nvl(body.name, name, '')",
+            "node ${packageDir}/lib/cloud-files-app.mjs create-folder values(path, name)"
+          ],
+          "help": {
+            "text": "Create a folder for the signed-in user",
+            "variables": [
+              { "name": "body", "text": "Request body", "default": "{}", "private": true },
+              { "name": "path", "text": "Parent folder", "default": "" },
+              { "name": "name", "text": "Folder name" }
+            ]
+          }
+        },
+        {
+          "name": "upload",
+          "execute": [
+            "set:path=nvl(body.path, path, '')",
+            "set:files=nvl(body.file, files, '[]')",
+            "node ${packageDir}/lib/cloud-files-app.mjs upload values(path, files)"
+          ],
+          "help": {
+            "text": "Upload files into the signed-in user's current folder",
+            "variables": [
+              { "name": "body", "text": "Multipart request body", "default": "{}", "private": true },
+              { "name": "path", "text": "Target folder", "default": "" },
+              { "name": "files", "text": "Uploaded file parts", "default": "[]", "private": true }
+            ]
+          }
+        },
+        {
+          "name": "delete",
+          "execute": [
+            "set:path=nvl(body.path, path, '')",
+            "node ${packageDir}/lib/cloud-files-app.mjs delete value(path)"
+          ],
+          "help": {
+            "text": "Delete a file owned by the signed-in user",
+            "variables": [
+              { "name": "body", "text": "Request body", "default": "{}", "private": true },
+              { "name": "path", "text": "File path" }
             ]
           }
         }

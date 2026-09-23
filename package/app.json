@@ -1,0 +1,26 @@
+{
+  "name": "Files",
+  "icon": "folder",
+  "components": "static/cloud-files.js",
+  "api": [
+    { "action": "browse", "method": "POST", "path": "/browse", "command": "browse" },
+    { "action": "create-folder", "method": "POST", "path": "/folders", "command": "create-folder" },
+    { "action": "upload", "method": "POST", "path": "/upload", "command": "upload" },
+    { "action": "delete", "method": "POST", "path": "/delete", "command": "delete" }
+  ],
+  "routes": {
+    "/": {
+      "type": "Page",
+      "props": {
+        "documentTitle": "Files",
+        "layout": "workspace"
+      },
+      "children": [
+        {
+          "type": "CloudFilesBrowser",
+          "props": {}
+        }
+      ]
+    }
+  }
+}
