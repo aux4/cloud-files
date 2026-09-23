@@ -44,3 +44,9 @@ Storage is a current gauge, not a monthly event counter. Plans are authored in d
 Packages using Cloud Files must call the authenticated Cloud file API on behalf of the current user. They must never accept an arbitrary user id as storage authority.
 
 Folders use a zero-byte `.aux4-folder` marker in object storage. The Files app hides that marker. All objects remain under the verified user's central scope folder and are encrypted with the scope's KMS key by the Cloud Files API.
+
+## Files app experience
+
+The responsive Files app presents storage as a familiar file manager with compact breadcrumbs, search within the current folder, item counts, and consistent file rows on desktop and mobile. Files can be selected with the upload action or dragged onto the file list. Folder creation and file deletion use focused confirmation dialogs.
+
+Initial loading uses row-shaped placeholders. Later refreshes keep the existing rows mounted and display a thin in-place progress indicator, so uploading, deleting, or moving between folders does not shift the list.
