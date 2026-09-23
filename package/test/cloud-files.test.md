@@ -41,7 +41,7 @@ aux4 platform app files meta && echo && aux4 platform app files ui
 ```
 
 ```expect:partial
-{"name":"Files","icon":"folder"}
+{"name":"Files","icon":"folder","title":"Cloud Files"}
 *?"components":"static/cloud-files.js"*?
 ```
 

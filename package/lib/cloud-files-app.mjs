@@ -158,7 +158,7 @@ async function appDescriptor(file, projection) {
 
 try {
   let result;
-  if (action === "meta") result = await appDescriptor(args[0], ({ name, icon }) => ({ name, icon }));
+  if (action === "meta") result = await appDescriptor(args[0], ({ name, icon, title, logo, logoAlt }) => ({ name, icon, title, logo, logoAlt }));
   else if (action === "ui") result = await appDescriptor(args[0], ({ api, routes, components }) => ({ api, routes, components }));
   else if (action === "browse") result = await browse(args[0]);
   else if (action === "create-folder") result = await createFolder(args[0], args[1]);
