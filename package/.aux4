@@ -1,7 +1,7 @@
 {
   "scope": "aux4",
   "name": "cloud-files",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "type": "cloud",
   "cloud": {
     "deployment": "new-vm",
