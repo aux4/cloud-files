@@ -1,7 +1,7 @@
 {
   "scope": "aux4",
   "name": "cloud-files",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "type": "cloud",
   "cloud": {
     "deployment": "new-vm",
@@ -256,6 +256,21 @@
               {
                 "name": "name",
                 "text": "Folder name"
+              }
+            ]
+          }
+        },
+        {
+          "name": "download",
+          "execute": [
+            "node ${packageDir}/lib/cloud-files-app.mjs download value(path)"
+          ],
+          "help": {
+            "text": "Download a file owned by the signed-in user",
+            "variables": [
+              {
+                "name": "path",
+                "text": "File path"
               }
             ]
           }

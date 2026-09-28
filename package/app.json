@@ -5,6 +5,7 @@
   "components": "static/cloud-files.js",
   "api": [
     { "action": "browse", "method": "POST", "path": "/browse", "command": "browse" },
+    { "action": "download", "method": "GET", "path": "/download", "command": "download" },
     { "action": "create-folder", "method": "POST", "path": "/folders", "command": "create-folder" },
     { "action": "upload", "method": "POST", "path": "/upload", "command": "upload" },
     { "action": "delete", "method": "POST", "path": "/delete", "command": "delete" }

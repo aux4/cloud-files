@@ -42,7 +42,7 @@ aux4 platform app files meta && echo && aux4 platform app files ui
 
 ```expect:partial
 {"name":"Files","icon":"folder","title":"Cloud Files"}
-*?"components":"static/cloud-files.js"*?
+*?"action":"download"*?"components":"static/cloud-files.js"*?
 ```
 
 ### should browse folders and hide folder markers
@@ -81,6 +81,16 @@ CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files upload --path docs --files 
 
 ```expect:partial
 *?"message":"Uploaded 1 file"*?"path":"docs/note.txt"*?
+```
+
+### should return a binary-safe download response
+
+```execute
+CLOUD_FILES_DOWNLOAD_FIXTURE='binary fixture' CLOUD_FILES_DOWNLOAD_TYPE='application/pdf' aux4 platform app files download --path 'docs/report.pdf'
+```
+
+```expect:partial
+*?"statusCode":200*?"Content-Type":"application/pdf"*?"Content-Disposition":"attachment; filename=\"report.pdf\"*?"isBase64Encoded":true*?"body":"YmluYXJ5IGZpeHR1cmU="*?
 ```
 
 ### should delete a file

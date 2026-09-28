@@ -49,3 +49,24 @@ test("breadcrumb CSS scrolls instead of clipping labels", () => {
   assert.match(source, /\.cf-crumb\{[^}]*flex:none/);
   assert.doesNotMatch(source, /\.cf-crumb\{[^}]*text-overflow:ellipsis/);
 });
+
+test("file extensions map to distinct file-kind icons with a safe fallback", () => {
+  const browser = component();
+
+  assert.equal(browser._fileKind("photo.JPEG").icon, "image");
+  assert.equal(browser._fileKind("report.pdf").icon, "document");
+  assert.equal(browser._fileKind("budget.xlsx").icon, "sheet");
+  assert.equal(browser._fileKind("source.ts").icon, "code");
+  assert.equal(browser._fileKind("bundle.zip").icon, "archive");
+  assert.equal(browser._fileKind("README").icon, "file");
+});
+
+test("file rows expose an encoded authenticated download link", () => {
+  const browser = component();
+  const file = { name: "Q3 report.pdf", path: "reports/Q3 report.pdf", size: 42, lastModified: null };
+
+  assert.equal(browser._downloadUrl(file), "/api/apps/files/download?path=reports%2FQ3%20report.pdf");
+  const rendered = JSON.stringify(browser._renderRows([], [file]));
+  assert.match(rendered, /Download Q3 report\.pdf/);
+  assert.match(rendered, /reports%2FQ3%20report\.pdf/);
+});

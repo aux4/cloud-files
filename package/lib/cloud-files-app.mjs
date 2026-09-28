@@ -140,6 +140,54 @@ async function upload(pathValue, filesValue) {
   return { message: `Uploaded ${uploaded.length} file${uploaded.length === 1 ? "" : "s"}`, path, uploaded };
 }
 
+function downloadEnvelope(path, bytes, contentType = "application/octet-stream") {
+  const name = path.split("/").pop() || "download";
+  const fallback = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_") || "download";
+  const encoded = encodeURIComponent(name).replace(/[!'()*]/g, char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+  return {
+    statusCode: 200,
+    headers: {
+      "Content-Type": contentType,
+      "Content-Disposition": `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`,
+      "Cache-Control": "private, no-store"
+    },
+    isBase64Encoded: true,
+    body: Buffer.from(bytes).toString("base64")
+  };
+}
+
+async function downloadFile(pathValue) {
+  const path = cleanPath(pathValue);
+  if (!path) throw new Error("File path is required");
+  if (process.env.CLOUD_FILES_DOWNLOAD_FIXTURE !== undefined) {
+    return downloadEnvelope(path, Buffer.from(process.env.CLOUD_FILES_DOWNLOAD_FIXTURE), process.env.CLOUD_FILES_DOWNLOAD_TYPE || "application/octet-stream");
+  }
+
+  const { token } = cloudConfig();
+  const response = await fetch(filesUrl(path), {
+    headers: { Authorization: `Bearer ${token}` },
+    redirect: "manual"
+  });
+  const location = response.headers.get("location");
+  if (response.status >= 300 && response.status < 400 && location) {
+    return {
+      statusCode: 302,
+      headers: { Location: location, "Cache-Control": "private, no-store" },
+      body: ""
+    };
+  }
+  if (!response.ok) {
+    const text = await response.text();
+    let message = text;
+    try {
+      const body = text ? JSON.parse(text) : {};
+      message = body.error || body.message || text;
+    } catch {}
+    throw new Error(message || `Cloud Files returned ${response.status}`);
+  }
+  return downloadEnvelope(path, Buffer.from(await response.arrayBuffer()), response.headers.get("content-type") || "application/octet-stream");
+}
+
 async function deleteFile(pathValue) {
   const path = cleanPath(pathValue);
   if (!path) throw new Error("File path is required");
@@ -161,6 +209,7 @@ try {
   if (action === "meta") result = await appDescriptor(args[0], ({ name, icon, title, logo, logoAlt }) => ({ name, icon, title, logo, logoAlt }));
   else if (action === "ui") result = await appDescriptor(args[0], ({ api, routes, components }) => ({ api, routes, components }));
   else if (action === "browse") result = await browse(args[0]);
+  else if (action === "download") result = await downloadFile(args[0]);
   else if (action === "create-folder") result = await createFolder(args[0], args[1]);
   else if (action === "upload") result = await upload(args[0], args[1]);
   else if (action === "delete") result = await deleteFile(args[0]);

@@ -24,6 +24,7 @@ Open the `files` VM URL to use the built-in Files app. The app is served by `aux
 - browse their own folders;
 - create folders;
 - upload one or more files; and
+- download files without exposing Cloud credentials; and
 - delete files after confirmation.
 
 The VM also exposes file operations directly. From any machine with `aux4/cloud` installed, call the fixed `files` VM:
@@ -47,6 +48,8 @@ Folders use a zero-byte `.aux4-folder` marker in object storage. The Files app h
 
 ## Files app experience
 
-The responsive Files app presents storage as a familiar file manager with compact breadcrumbs, search within the current folder, item counts, and consistent file rows on desktop and mobile. Files can be selected with the upload action or dragged onto the file list. Folder creation and file deletion use focused confirmation dialogs.
+The responsive Files app presents storage as a familiar file manager with compact breadcrumbs, search within the current folder, item counts, and consistent file rows on desktop and mobile. File icons are selected from the filename extension for images, documents, spreadsheets, archives, audio, video, and source files, with a generic fallback. Files can be downloaded, selected with the upload action, or dragged onto the file list. Folder creation and file deletion use focused confirmation dialogs.
+
+Downloads pass through the authenticated Files app and Cloud API, then redirect to a five-minute presigned object URL. The signed URL supplies an attachment filename, supports binary files without UTF-8 conversion, and does not receive the user's Cloud authorization header.
 
 Initial loading uses row-shaped placeholders. Later refreshes keep the existing rows mounted and display a thin in-place progress indicator, so uploading, deleting, or moving between folders does not shift the list.
