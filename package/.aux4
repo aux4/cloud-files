@@ -280,7 +280,7 @@
           "execute": [
             "set:path=nvl(body.path, path, '')",
             "set:files=nvl(body.file, files, '[]')",
-            "node ${packageDir}/lib/cloud-files-app.mjs upload values(path, files)"
+            "node ${packageDir}/lib/cloud-files-app.mjs upload values(path, files, headers)"
           ],
           "help": {
             "text": "Upload files into the signed-in user's current folder",
@@ -300,6 +300,12 @@
                 "name": "files",
                 "text": "Uploaded file parts",
                 "default": "[]",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "Trusted request headers",
+                "default": "{}",
                 "private": true
               }
             ]
@@ -325,6 +331,218 @@
                 "text": "File path"
               }
             ]
+          }
+        },
+        {
+          "name": "channel-upload",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs upload values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Upload a channel attachment after checking current membership",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-download",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs download values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Download a channel attachment after checking current membership",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-folders",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs folders values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Manage channel shared folders with live Chat access checks",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-browse",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs browse values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Manage channel shared folders with live Chat access checks",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-publish",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs publish values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Manage channel shared folders with live Chat access checks",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "platform:component",
+      "commands": [
+        {
+          "name": "files-attachments",
+          "execute": [
+            "profile:platform:component:files-attachments"
+          ],
+          "help": {
+            "text": "Shared Files chat attachment component"
+          }
+        }
+      ]
+    },
+    {
+      "name": "platform:component:files-attachments",
+      "commands": [
+        {
+          "name": "meta",
+          "execute": [
+            "cat ${packageDir}/component.json"
+          ],
+          "help": {
+            "text": "Describe the FilesChat component"
+          }
+        },
+        {
+          "name": "bundle",
+          "execute": [
+            "cat ${packageDir}/static/files-attachments.js"
+          ],
+          "help": {
+            "text": "Emit the FilesChat component bundle"
           }
         }
       ]

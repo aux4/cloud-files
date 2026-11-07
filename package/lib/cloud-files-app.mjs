@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
+import { uploadedChannelFile } from "./channel-upload-input.mjs";
 
 const action = process.argv[2];
 const args = process.argv.slice(3);
@@ -124,7 +125,7 @@ async function createFolder(pathValue, nameValue) {
   return { message: `Created ${name}`, path, folder };
 }
 
-async function upload(pathValue, filesValue) {
+async function upload(pathValue, filesValue, headersValue) {
   const path = cleanPath(pathValue, { folder: true });
   const raw = parseJson(filesValue, []);
   const files = Array.isArray(raw) ? raw : raw ? [raw] : [];
@@ -134,7 +135,8 @@ async function upload(pathValue, filesValue) {
     const name = cleanName(file?.filename, "file");
     const source = String(file?.path || "");
     if (!source) throw new Error(`${name} is missing its temporary upload`);
-    await put(`${path}${name}`, await readFile(source), file?.mimeType || "application/octet-stream");
+    const checked = await uploadedChannelFile({file:[file]}, parseJson(headersValue, {}), {maxBytes:10485760});
+    await put(`${path}${name}`, Buffer.from(checked.data, "base64"), checked.type);
     uploaded.push({ name, path: `${path}${name}` });
   }
   return { message: `Uploaded ${uploaded.length} file${uploaded.length === 1 ? "" : "s"}`, path, uploaded };
@@ -211,7 +213,7 @@ try {
   else if (action === "browse") result = await browse(args[0]);
   else if (action === "download") result = await downloadFile(args[0]);
   else if (action === "create-folder") result = await createFolder(args[0], args[1]);
-  else if (action === "upload") result = await upload(args[0], args[1]);
+  else if (action === "upload") result = await upload(args[0], args[1], args[2]);
   else if (action === "delete") result = await deleteFile(args[0]);
   else throw new Error(`Unknown action: ${action || "(empty)"}`);
   output(result);

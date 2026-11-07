@@ -53,3 +53,13 @@ The responsive Files app presents storage as a familiar file manager with a desk
 Downloads pass through the authenticated Files app and Cloud API, then redirect to a five-minute presigned object URL. The signed URL supplies an attachment filename, supports binary files without UTF-8 conversion, and does not receive the user's Cloud authorization header.
 
 Initial loading uses row-shaped placeholders. Later refreshes keep the existing rows mounted and display a thin in-place progress indicator, so uploading, deleting, or moving between folders does not shift the list.
+
+## Shared conversation folders
+
+When Files and Chat are installed in the same VM, Files registers the reusable `FilesChat` component and shows **Shared folders**. Each conversation has one shared folder; its access follows current Chat membership. Members can browse/download published files. Uploading from a shared folder publishes an attachment-only message to the conversation. Manage membership in Chat; shared file deletion is not exposed independently of message history.
+
+Chat attachments support up to 10 files of 6 MiB each. Files assigns immutable opaque IDs, resolves metadata on the server, and checks current membership and message publication on downloads. Pending uploads are not listed or downloadable. Removing a member revokes subsequent access; already downloaded copies cannot be recalled. Personal uploads require real multipart requests and reject caller-supplied disk paths.
+
+Shared bytes are stored separately from private per-user Cloud files at `$CLOUD_STATE_DIR/files/channel-attachments` (or `<aux4Home>/apps/files/channel-attachments` locally), grouped by a hash of the channel ID. `FILES_ATTACHMENTS_ROOT` is a trusted server configuration override. Configure persistent VM state storage/sync for this area; it does not use the per-user Cloud Files quota API. No public object URLs are issued.
+
+The existing hosted Cloud packages use dedicated VMs. This integration is conditional on co-installation; it does not change that deployment policy. The local combined preview demonstrates the co-installed layout.

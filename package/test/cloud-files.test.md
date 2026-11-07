@@ -69,7 +69,7 @@ CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files create-folder --path docs -
 *?"message":"Created photos"*?"folder":"docs/photos/"*?
 ```
 
-### should upload a multipart-style temporary file
+### should reject a caller supplied upload path without multipart headers
 
 ```file:upload.txt
 hello files
@@ -80,7 +80,7 @@ CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files upload --path docs --files 
 ```
 
 ```expect:partial
-*?"message":"Uploaded 1 file"*?"path":"docs/note.txt"*?
+*?"error":"A multipart file is required."*?
 ```
 
 ### should return a binary-safe download response

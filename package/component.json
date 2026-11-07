@@ -1,0 +1,22 @@
+{
+  "name": "files-attachments",
+  "label": "FilesChat",
+  "tag": "files-chat",
+  "base": "FieldElement",
+  "icon": "paperclip",
+  "container": true,
+  "components": "static/files-attachments.js",
+  "propsSchema": {
+    "field": {
+      "type": "string",
+      "text": "Messages field"
+    },
+    "payload": {
+      "type": "object",
+      "text": "Channel context"
+    }
+  },
+  "docs": {
+    "description": "Optional chat composer with Files-managed channel attachments. Requires Chat and Files installed on the same VM."
+  }
+}

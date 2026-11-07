@@ -4,11 +4,66 @@
   "icon": "folder",
   "components": "static/cloud-files.js",
   "api": [
-    { "action": "browse", "method": "POST", "path": "/browse", "command": "browse" },
-    { "action": "download", "method": "GET", "path": "/download", "command": "download" },
-    { "action": "create-folder", "method": "POST", "path": "/folders", "command": "create-folder" },
-    { "action": "upload", "method": "POST", "path": "/upload", "command": "upload" },
-    { "action": "delete", "method": "POST", "path": "/delete", "command": "delete" }
+    {
+      "action": "browse",
+      "method": "POST",
+      "path": "/browse",
+      "command": "browse"
+    },
+    {
+      "action": "download",
+      "method": "GET",
+      "path": "/download",
+      "command": "download"
+    },
+    {
+      "action": "create-folder",
+      "method": "POST",
+      "path": "/folders",
+      "command": "create-folder"
+    },
+    {
+      "action": "upload",
+      "method": "POST",
+      "path": "/upload",
+      "command": "upload"
+    },
+    {
+      "action": "delete",
+      "method": "POST",
+      "path": "/delete",
+      "command": "delete"
+    },
+    {
+      "action": "channel-upload",
+      "method": "POST",
+      "path": "/channel-attachments",
+      "command": "channel-upload"
+    },
+    {
+      "action": "channel-download",
+      "method": "GET",
+      "path": "/channel-attachment",
+      "command": "channel-download"
+    },
+    {
+      "action": "channel-folders",
+      "method": "POST",
+      "path": "/channel-folders",
+      "command": "channel-folders"
+    },
+    {
+      "action": "channel-browse",
+      "method": "POST",
+      "path": "/channel-browse",
+      "command": "channel-browse"
+    },
+    {
+      "action": "channel-publish",
+      "method": "POST",
+      "path": "/channel-publish",
+      "command": "channel-publish"
+    }
   ],
   "routes": {
     "/": {

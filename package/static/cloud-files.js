@@ -43,6 +43,10 @@ export function register(engine) {
       _dialog: { state: true },
       _dragging: { state: true },
       _rootFolders: { state: true },
+      _sharedAvailable: { state: true },
+      _sharedFolders: { state: true },
+      _mode: { state: true },
+      _sharedChannel: { state: true },
       _view: { state: true },
       _sort: { state: true }
     };
@@ -51,6 +55,10 @@ export function register(engine) {
       super();
       this._path = "";
       this._rootFolders = [];
+      this._sharedAvailable = false;
+      this._sharedFolders = [];
+      this._mode = "personal";
+      this._sharedChannel = null;
       this._view = "list";
       this._sort = "name";
       this._folders = [];
@@ -69,6 +77,7 @@ export function register(engine) {
     connectedCallback() {
       super.connectedCallback();
       this._load();
+      this._loadSharedFolders();
     }
 
     disconnectedCallback() {
@@ -90,6 +99,17 @@ export function register(engine) {
       const result = await this.runtime.run(action, { stdin });
       if (result?.error) throw new Error(result.error);
       return result || {};
+    }
+
+    async _loadSharedFolders() {
+      try {
+        const result = await this._run("channel-folders", {});
+        this._sharedAvailable = result.available === true;
+        this._sharedFolders = this._sharedAvailable && Array.isArray(result.folders) ? result.folders.filter(folder => folder && (folder.id || folder.path) && folder.name) : [];
+      } catch {
+        this._sharedAvailable = false;
+        this._sharedFolders = [];
+      }
     }
 
     _notify(message, kind = "success") {
@@ -116,14 +136,66 @@ export function register(engine) {
         this._query = "";
       } catch (error) {
         this._error = error.message;
+        this._folders = [];
+        this._files = [];
         this._notify(error.message, "error");
       } finally {
         this._loading = false;
       }
     }
 
-    _open(folder) {
+    async _loadSharedFolder(folder, { force = false } = {}) {
+      if (!folder || (this._busy && !force)) return;
+      const channelId = folder.id || folder.path;
+      this._loading = true;
+      this._error = "";
+      try {
+        const result = await this._run("channel-browse", { channelId });
+        this._mode = "shared";
+        this._sharedChannel = { ...folder, id: channelId };
+        this._path = result.path || channelId;
+        this._folders = Array.isArray(result.folders) ? result.folders : [];
+        this._files = Array.isArray(result.files) ? result.files.map(file => ({ ...file, _shared: true })) : [];
+        this._query = "";
+      } catch (error) {
+        this._error = error.message;
+        this._folders = [];
+        this._files = [];
+        this._notify(error.message, "error");
+      } finally {
+        this._loading = false;
+      }
+    }
+
+    _showPersonal() {
+      if (this._busy) return;
+      this._mode = "personal";
+      this._sharedChannel = null;
+      this._load("");
+    }
+
+    _openPersonalFolder(folder) {
+      if (!folder || this._busy) return;
+      this._mode = "personal";
+      this._sharedChannel = null;
       this._load(folder.path);
+    }
+
+    _showSharedRoot() {
+      if (this._busy) return;
+      this._mode = "shared-root";
+      this._sharedChannel = null;
+      this._path = "";
+      this._folders = this._sharedFolders.slice();
+      this._files = [];
+      this._query = "";
+      this._error = "";
+    }
+
+    _open(folder) {
+      if (this._busy) return;
+      if (this._mode === "shared-root") this._loadSharedFolder(folder);
+      else this._load(folder.path);
     }
 
     _openDialog(dialog) {
@@ -136,6 +208,7 @@ export function register(engine) {
     }
 
     async _createFolder() {
+      if (this._mode !== "personal") return;
       const input = this.querySelector("[data-folder-name]");
       const name = input?.value?.trim();
       if (!name) {
@@ -159,9 +232,33 @@ export function register(engine) {
     async _uploadFiles(filesValue, input = null) {
       const files = [...(filesValue || [])];
       if (!files.length || this._busy) return;
+      const uploadMode = this._mode;
+      const targetChannel = uploadMode === "shared" && this._sharedChannel ? { ...this._sharedChannel } : null;
       this._busy = true;
       this._dragging = false;
       try {
+        if (uploadMode === "shared" && targetChannel?.id) {
+          for (const file of files) {
+            const form = new FormData();
+            form.append("channelId", targetChannel.id);
+            form.append("file", file, file.name);
+            const base = typeof window !== "undefined" ? (window.__BASE__ || "") : "";
+            const response = await fetch(`${base}/api/apps/files/channel-attachments`, { method: "POST", body: form });
+            const text = await response.text();
+            let result = {};
+            try { result = text ? JSON.parse(text) : {}; } catch { result = { error: text }; }
+            if (!response.ok || result.error) throw new Error(result.error || `Upload failed (${response.status})`);
+            const ref = result.ref || result.attachment || result;
+            await this._run("channel-publish", {
+              channelId: targetChannel.id,
+              attachments: [ref],
+              clientMessageId: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`
+            });
+          }
+          this._notify(`Uploaded ${files.length} file${files.length === 1 ? "" : "s"} to ${targetChannel.name}`);
+          await this._loadSharedFolder(targetChannel, { force: true });
+          return;
+        }
         const form = new FormData();
         form.append("path", this._path);
         for (const file of files) form.append("file", file, file.name);
@@ -245,11 +342,18 @@ export function register(engine) {
     }
 
     _downloadUrl(file) {
+      if (this._mode === "shared" || file?._shared) return file.url || "#";
       const base = typeof window !== "undefined" ? (window.__BASE__ || "") : "";
       return `${base}/api/apps/files/download?path=${encodeURIComponent(file.path)}`;
     }
 
     _renderBreadcrumbs() {
+      if (this._mode === "shared-root" || this._mode === "shared") return html`
+        <nav class="cf-breadcrumbs" aria-label="Folder path">
+          <button class="cf-crumb cf-root" type="button" title="Shared folders" @click=${() => this._showSharedRoot()} ?disabled=${this._loading || this._mode === "shared-root"}>${icon("folder")}<span>Shared folders</span></button>
+          ${this._mode === "shared" ? html`<span class="cf-separator">${icon("chevron")}</span><button class="cf-crumb" type="button" title=${this._sharedChannel?.name || "Channel"} disabled>${this._sharedChannel?.name || "Channel"}</button>` : ""}
+        </nav>
+      `;
       const parts = this._path.replace(/\/$/, "").split("/").filter(Boolean);
       return html`
         <nav class="cf-breadcrumbs" aria-label="Folder path">
@@ -283,7 +387,7 @@ export function register(engine) {
             <span class="cf-size">${this._formatBytes(item.size)}</span><span class="cf-modified">${this._formatDate(item.lastModified)}</span>
             <span class="cf-file-actions">
               <a class="cf-icon-button cf-download" href=${this._downloadUrl(item)} download=${item.name} title=${`Download ${item.name}`} aria-label=${`Download ${item.name}`}>${icon("download")}</a>
-              <button class="cf-icon-button cf-delete" type="button" title=${`Delete ${item.name}`} aria-label=${`Delete ${item.name}`} @click=${() => this._openDialog({ type: "delete", file: item })} ?disabled=${this._busy}>${icon("trash")}</button>
+              ${this._mode !== "shared" && !item._shared ? html`<button class="cf-icon-button cf-delete" type="button" title=${`Delete ${item.name}`} aria-label=${`Delete ${item.name}`} @click=${() => this._openDialog({ type: "delete", file: item })} ?disabled=${this._busy}>${icon("trash")}</button>` : ""}
             </span>
           </div>`;
         })}
@@ -330,25 +434,29 @@ export function register(engine) {
       const empty = !this._loading && !hasItems && !this._error;
       const noResults = !this._loading && hasItems && !folders.length && !files.length;
       const itemCount = this._folders.length + this._files.length;
+      const shared = this._mode === "shared" || this._mode === "shared-root";
+      const sharedRoot = this._mode === "shared-root";
 
       return html`
         <style>${styles}</style>
         <main class="cf-shell">
           <aside class="cf-sidebar" aria-label="File navigation">
             <div class="cf-brand">${icon("folder")}<span>Files</span></div>
-            <button class=${`cf-nav-item ${!this._path ? "is-active" : ""}`} @click=${() => this._load("")} ?disabled=${this._loading}>${icon("home")}<span>All files</span></button>
+            <button class=${`cf-nav-item ${this._mode === "personal" && !this._path ? "is-active" : ""}`} @click=${() => this._showPersonal()} ?disabled=${this._loading}>${icon("home")}<span>All files</span></button>
+            ${this._sharedAvailable ? html`<button class=${`cf-nav-item ${shared ? "is-active" : ""}`} @click=${() => this._showSharedRoot()} ?disabled=${this._loading}>${icon("shield")}<span>Shared folders</span></button>` : ""}
             <div class="cf-nav-heading">FOLDERS</div>
             <nav class="cf-folder-nav" aria-label="Folders">
-              ${repeat(this._rootFolders.slice().sort((a,b) => a.name.localeCompare(b.name)), folder => folder.path, folder => html`<button class=${`cf-nav-item ${this._path.startsWith(folder.path) ? "is-active" : ""}`} @click=${() => this._load(folder.path)} ?disabled=${this._loading}>${icon("folder")}<span>${folder.name}</span></button>`)}
+              ${repeat(this._rootFolders.slice().sort((a,b) => a.name.localeCompare(b.name)), folder => folder.path, folder => html`<button class=${`cf-nav-item ${this._mode === "personal" && this._path.startsWith(folder.path) ? "is-active" : ""}`} @click=${() => this._openPersonalFolder(folder)} ?disabled=${this._loading || this._busy}>${icon("folder")}<span>${folder.name}</span></button>`)}
             </nav>
-            <div class="cf-sidebar-note">Your files, organized.<span>One place for your work.</span></div>
+            <div class="cf-sidebar-note">${this._sharedAvailable ? "Shared access" : "Your files, organized."}<span>${this._sharedAvailable ? "Membership is managed in Chat." : "One place for your work."}</span></div>
           </aside>
           <div class="cf-workspace">
           <header class="cf-page-header">
-            <div><div class="cf-eyebrow">MY WORKSPACE</div><h1>${this._path.split("/").filter(Boolean).pop() || "All files"}</h1><p>${this._path ? "Files and folders in this location." : "Browse and manage your files."}</p></div>
+            <div><div class="cf-eyebrow">${sharedRoot ? "SHARED FOLDERS" : shared ? "SHARED CHANNEL" : "MY WORKSPACE"}</div><h1>${sharedRoot ? "Shared folders" : shared ? (this._sharedChannel?.name || "Channel") : (this._path.split("/").filter(Boolean).pop() || "All files")}</h1><p>${sharedRoot ? "Files shared with channels you belong to." : shared ? "Membership and access are managed in Chat." : this._path ? "Files and folders in this location." : "Browse and manage your files."}</p></div>
             <div class="cf-header-actions">
-              <button class="cf-button cf-button-secondary" type="button" @click=${() => this._openDialog({ type: "folder" })} ?disabled=${this._busy}>${icon("folderPlus")}<span>New folder</span></button>
-              <button class="cf-button cf-button-primary" type="button" @click=${() => this.querySelector(".cf-upload-input")?.click()} ?disabled=${this._busy}>${icon("upload")}<span>${this._busy ? "Working…" : "Upload files"}</span></button>
+              ${this._sharedAvailable ? html`<button class="cf-button cf-button-secondary cf-mobile-shared-nav" type="button" @click=${() => shared ? this._showPersonal() : this._showSharedRoot()} ?disabled=${this._loading || this._busy}>${icon(shared ? "home" : "shield")}<span>${shared ? "My files" : "Shared folders"}</span></button>` : ""}
+              ${!shared ? html`<button class="cf-button cf-button-secondary" type="button" @click=${() => this._openDialog({ type: "folder" })} ?disabled=${this._busy}>${icon("folderPlus")}<span>New folder</span></button>` : ""}
+              ${!sharedRoot ? html`<button class="cf-button cf-button-primary" type="button" @click=${() => this.querySelector(".cf-upload-input")?.click()} ?disabled=${this._busy}>${icon("upload")}<span>${this._busy ? "Working…" : "Upload files"}</span></button>` : ""}
               <input class="cf-upload-input" aria-label="Upload files" type="file" multiple hidden ?disabled=${this._busy} @change=${event => this._uploadFiles(event.target.files, event.target)} />
             </div>
           </header>
@@ -367,13 +475,13 @@ export function register(engine) {
               <div class=${`cf-progress ${this._loading || this._busy ? "is-active" : ""}`}><span></span></div>
               <div class="cf-columns" aria-hidden="true"><span></span><span>Name</span><span>Size</span><span>Modified</span><span></span></div>
               ${this._loading && !hasItems ? html`<div class="cf-skeleton" aria-label="Loading files">${[1, 2, 3].map(() => html`<div class="cf-skeleton-row"><i></i><span></span><em></em></div>`)}</div>`
-                : this._error && !hasItems ? html`<div class="cf-state cf-error-state"><div class="cf-state-icon">!</div><h2>Files could not be loaded</h2><p>${this._error}</p><button class="cf-button cf-button-secondary" type="button" @click=${() => this._load()}>Try again</button></div>`
-                : empty ? html`<div class="cf-state"><div class="cf-empty-icon">${icon("folder")}</div><h2>This folder is empty</h2><p>Upload files or create a folder to get started.</p></div>`
+                : this._error && !hasItems ? html`<div class="cf-state cf-error-state"><div class="cf-state-icon">!</div><h2>Files could not be loaded</h2><p>${this._error}</p><button class="cf-button cf-button-secondary" type="button" @click=${() => this._mode === "shared" && this._sharedChannel ? this._loadSharedFolder(this._sharedChannel) : this._load()}>Try again</button></div>`
+                : empty ? html`<div class="cf-state"><div class="cf-empty-icon">${icon("folder")}</div><h2>${sharedRoot ? "No shared folders" : "This folder is empty"}</h2><p>${sharedRoot ? "Channel folders appear here when you are a member." : shared ? "Upload files to share them with this channel." : "Upload files or create a folder to get started."}</p></div>`
                 : noResults ? html`<div class="cf-state"><div class="cf-empty-icon">${icon("search")}</div><h2>No matching files</h2><p>Try a different search.</p></div>`
                 : this._renderRows(folders, files)}
             </div>
           </section>
-          <div class="cf-bottom-note">Drag files here to upload · Search within the current folder</div>
+          <div class="cf-bottom-note">${shared ? "Shared access is managed in Chat · " : "Drag files here to upload · "}Search within the current folder</div>
           </div>
           ${this._message ? html`<div class=${`cf-toast ${this._messageKind === "error" ? "is-error" : ""}`} role=${this._messageKind === "error" ? "alert" : "status"}><span>${this._message}</span><button type="button" aria-label="Dismiss" @click=${() => { this._message = ""; }}>${icon("close")}</button></div>` : ""}
           ${this._renderDialog()}
@@ -399,12 +507,13 @@ export function register(engine) {
     @media(max-width:720px){.cf-shell{padding:24px 16px 64px}.cf-page-header{align-items:flex-start;margin-bottom:20px}.cf-page-header h1{font-size:31px}.cf-page-header p{font-size:14px}.cf-upload span{display:none}.cf-upload{width:44px;padding:10px}.cf-card{border-radius:12px}.cf-card-top{padding:12px 13px;gap:10px}.cf-toolbar-actions .cf-button span{display:none}.cf-toolbar-actions .cf-button{width:40px;padding:8px}.cf-root span{display:none}.cf-list-tools{height:56px;padding:9px 13px}.cf-search{max-width:none}.cf-columns{display:none}.cf-row{grid-template-columns:36px minmax(0,1fr) 70px;gap:10px;min-height:70px;padding:10px 13px}.cf-size,.cf-modified{display:none}.cf-mobile-meta{display:block}.cf-skeleton{padding:4px 13px}.cf-skeleton-row{grid-template-columns:36px minmax(100px,1fr);height:70px}.cf-skeleton-row em{display:none}.cf-toast{top:auto;bottom:92px;left:16px;right:16px;max-width:none}.cf-dialog{padding:22px}.cf-dialog-actions{display:grid;grid-template-columns:1fr 1fr}.cf-dialog-actions .cf-button{width:100%}}
     @media(max-width:440px){.cf-page-header p{max-width:245px}.cf-count{display:none}.cf-dialog-actions{grid-template-columns:1fr}.cf-dialog-actions .cf-button-primary,.cf-dialog-actions .cf-button-danger{grid-row:1}.cf-dialog-actions .cf-button-secondary{grid-row:2}}
 
-    .cf-shell{--cf-primary:#2563eb;--cf-primary-hover:#1d4ed8;max-width:none;padding:0;margin:0;display:grid;grid-template-columns:216px minmax(0,1fr);height:calc(100dvh - 104px);min-height:420px;background:#f8fafc;border:1px solid #e5eaf1;border-radius:18px;overflow:hidden}
+    .cf-shell{--cf-primary:#2563eb;--cf-primary-hover:#1d4ed8;max-width:none;padding:0;margin:0;display:grid;grid-template-columns:216px minmax(0,1fr);height:calc(100dvh - 104px);min-height:420px;background:#f8fafc;border:1px solid #e5eaf1;border-radius:18px;overflow:hidden}.cf-mobile-shared-nav{display:none}
     .cf-sidebar{display:flex;flex-direction:column;min-height:0;padding:28px 16px 20px;border-right:1px solid #e5eaf1;background:#f3f6fb}.cf-brand{display:flex;align-items:center;gap:12px;padding:0 12px 28px;font-size:23px;font-weight:750;letter-spacing:-.6px;color:#18273f}.cf-brand .cf-svg{width:28px;height:28px;color:#2563eb}.cf-nav-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:0;border-radius:9px;background:transparent;padding:12px;color:#526078;font:500 14px/20px inherit;cursor:pointer}.cf-nav-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cf-nav-item:hover{background:#eaf0f8}.cf-nav-item.is-active{background:#e2ecff;color:#1d4ed8;font-weight:650}.cf-nav-heading{font-size:10px;letter-spacing:1.4px;font-weight:700;color:#8995a6;padding:30px 12px 10px}.cf-folder-nav{overflow:auto;min-height:0}.cf-sidebar-note{margin-top:auto;padding:24px 12px 0;font-size:12px;font-weight:600;color:#526078}.cf-sidebar-note span{display:block;font-size:11px;font-weight:400;color:#8995a6;margin-top:5px}
     .cf-workspace{min-width:0;overflow:auto;padding:32px 36px;background:#fff}.cf-page-header{align-items:center;margin-bottom:26px}.cf-page-header h1{font-size:28px;line-height:1.3;letter-spacing:-.8px;margin:6px 0;overflow-wrap:anywhere}.cf-page-header p{font-size:13px}.cf-eyebrow{font-size:10px;letter-spacing:1.6px;color:#8190a5}.cf-header-actions{display:flex;gap:10px;flex-shrink:0}.cf-button{font-family:inherit;font-size:13px;font-weight:600;min-height:42px;border-radius:8px}.cf-card{border:0;border-radius:0;box-shadow:none;overflow:visible}.cf-card-top{padding:0 0 16px;min-height:48px;border-bottom:0}.cf-root span{display:inline}.cf-crumb{font-family:inherit;font-size:13px}.cf-list-tools{padding:0 0 22px;border-bottom:0;height:auto;gap:12px;flex-wrap:wrap}.cf-search{max-width:420px;height:42px;background:#f5f7fa;border:1px solid #edf0f5;min-width:180px}.cf-search input{font-family:inherit;font-size:13px}.cf-view-tools{display:flex;gap:12px;align-items:center}.cf-view-tools select{height:36px;border:1px solid #e5eaf1;border-radius:7px;background:#fff;color:#526078;padding:0 8px;font:12px system-ui}.cf-view-switch{display:flex;border:1px solid #e5eaf1;border-radius:7px;padding:3px;gap:2px}.cf-view-switch button{width:32px;height:28px;border:0;border-radius:4px;background:transparent;color:#7c889a;cursor:pointer;font-size:18px}.cf-view-switch button[aria-pressed=true]{background:#eaf1ff;color:#2563eb}.cf-columns,.cf-row{grid-template-columns:34px minmax(100px,1fr) 75px 160px 76px}.cf-columns{background:#f8fafc;border-radius:8px;text-transform:none;letter-spacing:0;font-size:12px}.cf-row{min-height:64px;padding:10px 14px}.cf-name strong{font-weight:500;font-size:13px}.cf-folder-icon{background:#fff5d7;color:#c38a18}.cf-kind{border-radius:8px}.cf-bottom-note{padding:24px 0;color:#98a2b3;font-size:11px}.cf-nav-item:focus-visible,.cf-view-switch button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
     .cf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:16px;min-height:0}.cf-grid .cf-columns{display:none}.cf-grid .cf-row{position:relative;display:flex;align-items:flex-start;flex-direction:column;gap:12px;border:1px solid #e5eaf1;border-radius:12px;padding:18px;min-height:158px}.cf-grid .cf-kind{width:42px;height:42px}.cf-grid .cf-kind .cf-svg{width:25px;height:25px}.cf-grid .cf-name{width:100%}.cf-grid .cf-mobile-meta{display:block;font-size:11px;max-width:100%}.cf-grid .cf-size,.cf-grid .cf-modified{display:none}.cf-grid .cf-file-actions,.cf-grid .cf-row-action{position:absolute;top:18px;right:10px}.cf-grid .cf-skeleton,.cf-grid .cf-state{grid-column:1/-1}
     @media(max-width:1100px){.cf-shell{grid-template-columns:180px minmax(0,1fr)}.cf-workspace{padding:26px 24px}.cf-header-actions{gap:6px}.cf-page-header{gap:12px}.cf-columns,.cf-row{grid-template-columns:32px minmax(90px,1fr) 65px 76px}.cf-modified{display:none}.cf-columns>span:nth-child(4){display:none}}
     @media(max-width:760px){.cf-shell{display:block;border:0;border-radius:0;height:calc(100dvh - 55px);min-height:0}.cf-sidebar{display:none}.cf-workspace{height:100%;padding:24px 18px}.cf-page-header{display:block;margin-bottom:22px}.cf-page-header h1{font-size:28px}.cf-page-header p{max-width:none;font-size:13px}.cf-header-actions{margin-top:20px;gap:10px}.cf-header-actions .cf-button{flex:1}.cf-card-top{padding-bottom:12px}.cf-count{display:block;font-size:11px}.cf-list-tools{gap:12px;padding-bottom:18px}.cf-search{flex-basis:100%;max-width:none}.cf-view-tools{width:100%;justify-content:space-between}.cf-view-tools select{flex:1;max-width:200px}.cf-row{grid-template-columns:34px minmax(0,1fr) 76px;gap:10px;padding:12px 0;min-height:72px}.cf-columns{display:none}.cf-size,.cf-modified{display:none}.cf-name strong{font-size:14px}.cf-mobile-meta{display:block;font-size:11px}.cf-icon-button{width:36px;height:40px}.cf-bottom-note{font-size:10px}.cf-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cf-grid .cf-row{padding:14px 12px;min-height:160px}.cf-grid .cf-file-actions{position:static;align-self:flex-end;margin-top:-6px}.cf-grid .cf-row-action{top:22px}.cf-grid .cf-name strong{font-size:12px}.cf-grid .cf-file-actions .cf-icon-button{height:30px;width:30px}.cf-grid .cf-mobile-meta{font-size:10px}}
+    @media(max-width:760px){.cf-mobile-shared-nav{display:inline-flex;flex-basis:100%}.cf-header-actions{flex-wrap:wrap}}
     @media(prefers-reduced-motion:reduce){.cf-progress span,.cf-skeleton-row>*{animation:none}.cf-button{transition:none}}
   `;
 

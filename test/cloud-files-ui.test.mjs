@@ -88,3 +88,65 @@ test("search and sorting do not mutate the folder listing", () => {
   browser._query = "missing";
   assert.deepEqual(browser._visibleItems(items), []);
 });
+
+test("shared files use the server download URL and never expose delete controls", () => {
+  const browser = component();
+  browser._mode = "shared";
+  const file = { name: "design.pdf", path: "attachment-id", url: "/api/apps/files/channel-attachment?channelId=channel-1&id=attachment-id", size: 12 };
+
+  assert.equal(browser._downloadUrl(file), file.url);
+  assert.doesNotMatch(JSON.stringify(browser._renderRows([], [file])), /Delete design\.pdf/);
+});
+
+test("shared breadcrumbs show the human channel title instead of the channel id", () => {
+  const browser = component();
+  browser._mode = "shared";
+  browser._path = "channel-id-123";
+  browser._sharedChannel = { id: "channel-id-123", name: "Project Alpha" };
+
+  const rendered = JSON.stringify(browser._renderBreadcrumbs());
+  assert.match(rendered, /Shared folders/);
+  assert.match(rendered, /Project Alpha/);
+  assert.doesNotMatch(rendered, /channel-id-123/);
+});
+
+test("shared UI wires the optional channel actions and mobile navigation", () => {
+  const source = readFileSync(new URL("../package/static/cloud-files.js", import.meta.url), "utf8");
+
+  assert.match(source, /_run\("channel-folders", \{\}\)/);
+  assert.match(source, /_run\("channel-browse", \{ channelId \}\)/);
+  assert.match(source, /channel-attachments/);
+  assert.match(source, /_run\("channel-publish"/);
+  assert.match(source, /cf-mobile-shared-nav/);
+});
+
+test("multi-file shared upload keeps its original channel while navigation is attempted", async () => {
+  const browser = component();
+  browser._mode = "shared";
+  browser._sharedChannel = { id: "channel-a", name: "Alpha" };
+  browser._run = async (action) => action === "channel-publish" ? {} : { path: "channel-a", folders: [], files: [] };
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  globalThis.fetch = async (_url, options) => {
+    requests.push(options.body.get("channelId"));
+    if (requests.length === 1) await gate;
+    return { ok: true, status: 200, text: async () => JSON.stringify({ id: `attachment-${requests.length}`, name: "file.txt" }) };
+  };
+  try {
+    const first = new Blob(["a"], { type: "text/plain" });
+    const second = new Blob(["b"], { type: "text/plain" });
+    Object.defineProperty(first, "name", { value: "a.txt" });
+    Object.defineProperty(second, "name", { value: "b.txt" });
+    const upload = browser._uploadFiles([first, second]);
+    await new Promise(resolve => setImmediate(resolve));
+    browser._showSharedRoot();
+    assert.equal(browser._mode, "shared");
+    release();
+    await upload;
+    assert.deepEqual(requests, ["channel-a", "channel-a"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
