@@ -3,7 +3,8 @@ import { readFile } from "node:fs/promises";
 import { uploadedChannelFile } from "./channel-upload-input.mjs";
 
 const action = process.argv[2];
-const args = process.argv.slice(3);
+const requiresUser = ['browse','create-folder','upload','download','delete'].includes(action);
+const args = process.argv.slice(requiresUser ? 4 : 3);
 const marker = ".aux4-folder";
 
 function output(value) {
@@ -207,6 +208,11 @@ async function appDescriptor(file, projection) {
 }
 
 try {
+  if (requiresUser) {
+    const principal = parseJson(process.argv[3], {});
+    const subject = principal?.sub || principal?.id;
+    if (typeof subject !== 'string' || !subject.trim()) throw new Error('Sign in to access your files.');
+  }
   let result;
   if (action === "meta") result = await appDescriptor(args[0], ({ name, icon, title, logo, logoAlt }) => ({ name, icon, title, logo, logoAlt }));
   else if (action === "ui") result = await appDescriptor(args[0], ({ api, routes, components }) => ({ api, routes, components }));

@@ -48,7 +48,7 @@ aux4 platform app files meta && echo && aux4 platform app files ui
 ### should browse folders and hide folder markers
 
 ```execute
-CLOUD_FILES_LIST_FIXTURE='{"folders":["docs/photos/"],"files":[{"name":"docs/readme.txt","size":42,"lastModified":"2026-09-23T00:00:00.000Z"},{"name":"docs/.aux4-folder","size":0}]}' aux4 platform app files browse --path docs
+CLOUD_FILES_LIST_FIXTURE='{"folders":["docs/photos/"],"files":[{"name":"docs/readme.txt","size":42,"lastModified":"2026-09-23T00:00:00.000Z"},{"name":"docs/.aux4-folder","size":0}]}' aux4 platform app files browse --principal '{"sub":"test-user"}' --path docs
 ```
 
 ```expect:partial
@@ -62,7 +62,7 @@ CLOUD_FILES_LIST_FIXTURE='{"folders":["docs/photos/"],"files":[{"name":"docs/rea
 ### should create a folder marker
 
 ```execute
-CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files create-folder --path docs --name photos
+CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files create-folder --principal '{"sub":"test-user"}' --path docs --name photos
 ```
 
 ```expect:partial
@@ -76,7 +76,7 @@ hello files
 ```
 
 ```execute
-CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files upload --path docs --files '[{"filename":"note.txt","mimeType":"text/plain","path":"upload.txt"}]'
+CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files upload --principal '{"sub":"test-user"}' --path docs --files '[{"filename":"note.txt","mimeType":"text/plain","path":"upload.txt"}]'
 ```
 
 ```expect:partial
@@ -86,7 +86,7 @@ CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files upload --path docs --files 
 ### should return a binary-safe download response
 
 ```execute
-CLOUD_FILES_DOWNLOAD_FIXTURE='binary fixture' CLOUD_FILES_DOWNLOAD_TYPE='application/pdf' aux4 platform app files download --path 'docs/report.pdf'
+CLOUD_FILES_DOWNLOAD_FIXTURE='binary fixture' CLOUD_FILES_DOWNLOAD_TYPE='application/pdf' aux4 platform app files download --principal '{"sub":"test-user"}' --path 'docs/report.pdf'
 ```
 
 ```expect:partial
@@ -96,7 +96,7 @@ CLOUD_FILES_DOWNLOAD_FIXTURE='binary fixture' CLOUD_FILES_DOWNLOAD_TYPE='applica
 ### should delete a file
 
 ```execute
-CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files delete --path docs/note.txt
+CLOUD_FILES_WRITE_FIXTURE=ok aux4 platform app files delete --principal '{"sub":"test-user"}' --path docs/note.txt
 ```
 
 ```expect:partial

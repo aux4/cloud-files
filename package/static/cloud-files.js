@@ -186,6 +186,17 @@ export function register(engine) {
       this._mode = "shared-root";
       this._sharedChannel = null;
       this._path = "";
+      this._folders = this._sharedAvailable ? [{ id: "chat", path: "chat/", name: "Chat", type: "folder" }] : [];
+      this._files = [];
+      this._query = "";
+      this._error = "";
+    }
+
+    _showSharedApp() {
+      if (this._busy) return;
+      this._mode = "shared-app";
+      this._sharedChannel = null;
+      this._path = "chat/";
       this._folders = this._sharedFolders.slice();
       this._files = [];
       this._query = "";
@@ -194,7 +205,8 @@ export function register(engine) {
 
     _open(folder) {
       if (this._busy) return;
-      if (this._mode === "shared-root") this._loadSharedFolder(folder);
+      if (this._mode === "shared-root") this._showSharedApp();
+      else if (this._mode === "shared-app") this._loadSharedFolder(folder);
       else this._load(folder.path);
     }
 
@@ -231,7 +243,7 @@ export function register(engine) {
 
     async _uploadFiles(filesValue, input = null) {
       const files = [...(filesValue || [])];
-      if (!files.length || this._busy) return;
+      if (!files.length || this._busy || ["shared-root", "shared-app"].includes(this._mode)) return;
       const uploadMode = this._mode;
       const targetChannel = uploadMode === "shared" && this._sharedChannel ? { ...this._sharedChannel } : null;
       this._busy = true;
@@ -348,9 +360,10 @@ export function register(engine) {
     }
 
     _renderBreadcrumbs() {
-      if (this._mode === "shared-root" || this._mode === "shared") return html`
+      if (this._mode !== "personal") return html`
         <nav class="cf-breadcrumbs" aria-label="Folder path">
           <button class="cf-crumb cf-root" type="button" title="Shared folders" @click=${() => this._showSharedRoot()} ?disabled=${this._loading || this._mode === "shared-root"}>${icon("folder")}<span>Shared folders</span></button>
+          ${this._mode !== "shared-root" ? html`<span class="cf-separator">${icon("chevron")}</span><button class="cf-crumb" type="button" title="Chat" @click=${() => this._showSharedApp()} ?disabled=${this._loading || this._mode === "shared-app"}>Chat</button>` : ""}
           ${this._mode === "shared" ? html`<span class="cf-separator">${icon("chevron")}</span><button class="cf-crumb" type="button" title=${this._sharedChannel?.name || "Channel"} disabled>${this._sharedChannel?.name || "Channel"}</button>` : ""}
         </nav>
       `;
@@ -434,7 +447,8 @@ export function register(engine) {
       const empty = !this._loading && !hasItems && !this._error;
       const noResults = !this._loading && hasItems && !folders.length && !files.length;
       const itemCount = this._folders.length + this._files.length;
-      const shared = this._mode === "shared" || this._mode === "shared-root";
+      const shared = this._mode !== "personal";
+      const sharedApp = this._mode === "shared-app";
       const sharedRoot = this._mode === "shared-root";
 
       return html`
@@ -452,11 +466,11 @@ export function register(engine) {
           </aside>
           <div class="cf-workspace">
           <header class="cf-page-header">
-            <div><div class="cf-eyebrow">${sharedRoot ? "SHARED FOLDERS" : shared ? "SHARED CHANNEL" : "MY WORKSPACE"}</div><h1>${sharedRoot ? "Shared folders" : shared ? (this._sharedChannel?.name || "Channel") : (this._path.split("/").filter(Boolean).pop() || "All files")}</h1><p>${sharedRoot ? "Files shared with channels you belong to." : shared ? "Membership and access are managed in Chat." : this._path ? "Files and folders in this location." : "Browse and manage your files."}</p></div>
+            <div><div class="cf-eyebrow">${sharedRoot || sharedApp ? "SHARED FOLDERS" : shared ? "SHARED CHANNEL" : "MY WORKSPACE"}</div><h1>${sharedRoot ? "Shared folders" : sharedApp ? "Chat" : shared ? (this._sharedChannel?.name || "Channel") : (this._path.split("/").filter(Boolean).pop() || "All files")}</h1><p>${sharedRoot ? "Browse shared files by app." : sharedApp ? "Files from your channels and direct conversations." : shared ? "Membership and access are managed in Chat." : this._path ? "Files and folders in this location." : "Browse and manage your files."}</p></div>
             <div class="cf-header-actions">
               ${this._sharedAvailable ? html`<button class="cf-button cf-button-secondary cf-mobile-shared-nav" type="button" @click=${() => shared ? this._showPersonal() : this._showSharedRoot()} ?disabled=${this._loading || this._busy}>${icon(shared ? "home" : "shield")}<span>${shared ? "My files" : "Shared folders"}</span></button>` : ""}
               ${!shared ? html`<button class="cf-button cf-button-secondary" type="button" @click=${() => this._openDialog({ type: "folder" })} ?disabled=${this._busy}>${icon("folderPlus")}<span>New folder</span></button>` : ""}
-              ${!sharedRoot ? html`<button class="cf-button cf-button-primary" type="button" @click=${() => this.querySelector(".cf-upload-input")?.click()} ?disabled=${this._busy}>${icon("upload")}<span>${this._busy ? "Working…" : "Upload files"}</span></button>` : ""}
+              ${!sharedRoot && !sharedApp ? html`<button class="cf-button cf-button-primary" type="button" @click=${() => this.querySelector(".cf-upload-input")?.click()} ?disabled=${this._busy}>${icon("upload")}<span>${this._busy ? "Working…" : "Upload files"}</span></button>` : ""}
               <input class="cf-upload-input" aria-label="Upload files" type="file" multiple hidden ?disabled=${this._busy} @change=${event => this._uploadFiles(event.target.files, event.target)} />
             </div>
           </header>
@@ -476,7 +490,7 @@ export function register(engine) {
               <div class="cf-columns" aria-hidden="true"><span></span><span>Name</span><span>Size</span><span>Modified</span><span></span></div>
               ${this._loading && !hasItems ? html`<div class="cf-skeleton" aria-label="Loading files">${[1, 2, 3].map(() => html`<div class="cf-skeleton-row"><i></i><span></span><em></em></div>`)}</div>`
                 : this._error && !hasItems ? html`<div class="cf-state cf-error-state"><div class="cf-state-icon">!</div><h2>Files could not be loaded</h2><p>${this._error}</p><button class="cf-button cf-button-secondary" type="button" @click=${() => this._mode === "shared" && this._sharedChannel ? this._loadSharedFolder(this._sharedChannel) : this._load()}>Try again</button></div>`
-                : empty ? html`<div class="cf-state"><div class="cf-empty-icon">${icon("folder")}</div><h2>${sharedRoot ? "No shared folders" : "This folder is empty"}</h2><p>${sharedRoot ? "Channel folders appear here when you are a member." : shared ? "Upload files to share them with this channel." : "Upload files or create a folder to get started."}</p></div>`
+                : empty ? html`<div class="cf-state"><div class="cf-empty-icon">${icon("folder")}</div><h2>${sharedRoot || sharedApp ? "No shared folders" : "This folder is empty"}</h2><p>${sharedRoot || sharedApp ? "Channel and conversation folders appear here when you are a member." : shared ? "Upload files to share them with this channel." : "Upload files or create a folder to get started."}</p></div>`
                 : noResults ? html`<div class="cf-state"><div class="cf-empty-icon">${icon("search")}</div><h2>No matching files</h2><p>Try a different search.</p></div>`
                 : this._renderRows(folders, files)}
             </div>

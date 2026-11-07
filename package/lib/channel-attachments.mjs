@@ -35,7 +35,8 @@ function contentType(value) { return value == null || value === "" ? "applicatio
 function decode(value) {
   if (typeof value !== "string" || !value || value.length % 4) throw error("Attachment data must be strict base64");
   if (value.length > Math.ceil(MAX_BYTES / 3) * 4) throw error("Attachment exceeds the 6 MiB limit");
-  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(value)) throw error("Attachment data must be strict base64");
+  // A repeated-group regex can exhaust the V8 stack on multi-megabyte photos.
+  // Decode then compare the canonical encoding to reject invalid characters/padding.
   const bytes = Buffer.from(value, "base64");
   if (!bytes.length || bytes.length > MAX_BYTES || bytes.toString("base64") !== value) throw error("Attachment exceeds the 6 MiB limit or is invalid base64");
   return bytes;

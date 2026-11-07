@@ -29,9 +29,23 @@ test('personal Files upload also rejects JSON paths and accepts validated multip
   const path=join(dir,'personal.txt');await writeFile(path,'personal bytes');
   const files=JSON.stringify([{filename:'personal.txt',path,mimeType:'text/plain'}]);
   const script=new URL('../package/lib/cloud-files-app.mjs',import.meta.url).pathname;
-  const denied=JSON.parse((await run('node',[script,'upload','docs',files,'{}'],{env:{...process.env,CLOUD_FILES_WRITE_FIXTURE:'ok'}})).stdout);
+  const denied=JSON.parse((await run('node',[script,'upload',JSON.stringify({sub:'alice'}),'docs',files,'{}'],{env:{...process.env,CLOUD_FILES_WRITE_FIXTURE:'ok'}})).stdout);
   assert.equal(denied.error,'A multipart file is required.');
-  const accepted=JSON.parse((await run('node',[script,'upload','docs',files,JSON.stringify(headers)],{env:{...process.env,CLOUD_FILES_WRITE_FIXTURE:'ok'}})).stdout);
+  const accepted=JSON.parse((await run('node',[script,'upload',JSON.stringify({sub:'alice'}),'docs',files,JSON.stringify(headers)],{env:{...process.env,CLOUD_FILES_WRITE_FIXTURE:'ok'}})).stdout);
   assert.equal(accepted.message,'Uploaded 1 file');
  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('personal and shared Files actions reject anonymous calls even with server credentials present',async()=>{
+ const {execFile}=await import('node:child_process');const {promisify}=await import('node:util');const run=promisify(execFile);
+ const script=new URL('../package/lib/cloud-files-app.mjs',import.meta.url).pathname;
+ const env={...process.env,AUX4_ACCESS_TOKEN:'misconfigured-global-token',CLOUD_FILES_LIST_FIXTURE:'{"files":[{"name":"secret.txt"}]}',CLOUD_FILES_WRITE_FIXTURE:'ok',CLOUD_FILES_DOWNLOAD_FIXTURE:'private'};
+ for(const action of ['browse','create-folder','upload','download','delete']){
+  const result=JSON.parse((await run('node',[script,action,'{}','docs'],{env})).stdout);
+  assert.match(result.error,/Sign in/);assert.ok(!JSON.stringify(result).includes('secret.txt'));
+ }
+ const {channelFilesAction}=await import('../package/lib/channel-files-cli.mjs');
+ for(const action of ['folders','browse','upload','download','resolve','publish']){
+  const result=await channelFilesAction(action,'{}','{}','{}','/tmp/security-test-unused','{}');assert.equal(result.statusCode,403);
+ }
 });

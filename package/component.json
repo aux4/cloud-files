@@ -17,6 +17,6 @@
     }
   },
   "docs": {
-    "description": "Optional chat composer with Files-managed channel attachments. Requires Chat and Files installed on the same VM."
+    "description": "Optional chat composer with Files-managed channel attachments. Supports local or configured remote Files storage."
   }
 }

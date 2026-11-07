@@ -150,3 +150,31 @@ test("multi-file shared upload keeps its original channel while navigation is at
     globalThis.fetch = originalFetch;
   }
 });
+
+test("shared folders group conversations under Chat and keep uploads inside conversations", async () => {
+  const browser = component();
+  browser._sharedAvailable = true;
+  browser._sharedFolders = [{ id: "room-1", name: "Design team" }];
+  const calls = [];
+  browser._run = async (action, body) => {
+    calls.push({ action, body });
+    return { path: body.channelId, files: [], folders: [] };
+  };
+  browser._showSharedRoot();
+  assert.deepEqual(browser._folders.map(folder => folder.name), ["Chat"]);
+  await browser._uploadFiles([{ name: "blocked.txt" }]);
+  browser._open(browser._folders[0]);
+  assert.equal(browser._mode, "shared-app");
+  assert.deepEqual(browser._folders.map(folder => folder.name), ["Design team"]);
+  await browser._uploadFiles([{ name: "blocked.txt" }]);
+  assert.equal(calls.length, 0);
+  await browser._loadSharedFolder(browser._folders[0]);
+  assert.deepEqual(calls, [{ action: "channel-browse", body: { channelId: "room-1" } }]);
+  const crumbs = JSON.stringify(browser._renderBreadcrumbs());
+  assert.match(crumbs, /Shared folders/);
+  assert.match(crumbs, /Chat/);
+  assert.match(crumbs, /Design team/);
+  browser._showSharedApp();
+  assert.equal(browser._sharedChannel, null);
+  assert.equal(browser._files.length, 0);
+});

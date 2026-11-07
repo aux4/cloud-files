@@ -213,7 +213,7 @@
           "name": "browse",
           "execute": [
             "set:path=nvl(body.path, path, '')",
-            "node ${packageDir}/lib/cloud-files-app.mjs browse value(path)"
+            "node ${packageDir}/lib/cloud-files-app.mjs browse values(principal, path)"
           ],
           "help": {
             "text": "List the signed-in user's files and folders",
@@ -228,6 +228,12 @@
                 "name": "path",
                 "text": "Folder path",
                 "default": ""
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
               }
             ]
           }
@@ -237,7 +243,7 @@
           "execute": [
             "set:path=nvl(body.path, path, '')",
             "set:name=nvl(body.name, name, '')",
-            "node ${packageDir}/lib/cloud-files-app.mjs create-folder values(path, name)"
+            "node ${packageDir}/lib/cloud-files-app.mjs create-folder values(principal, path, name)"
           ],
           "help": {
             "text": "Create a folder for the signed-in user",
@@ -256,6 +262,12 @@
               {
                 "name": "name",
                 "text": "Folder name"
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
               }
             ]
           }
@@ -263,7 +275,7 @@
         {
           "name": "download",
           "execute": [
-            "node ${packageDir}/lib/cloud-files-app.mjs download value(path)"
+            "node ${packageDir}/lib/cloud-files-app.mjs download values(principal, path)"
           ],
           "help": {
             "text": "Download a file owned by the signed-in user",
@@ -271,6 +283,12 @@
               {
                 "name": "path",
                 "text": "File path"
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
               }
             ]
           }
@@ -280,7 +298,7 @@
           "execute": [
             "set:path=nvl(body.path, path, '')",
             "set:files=nvl(body.file, files, '[]')",
-            "node ${packageDir}/lib/cloud-files-app.mjs upload values(path, files, headers)"
+            "node ${packageDir}/lib/cloud-files-app.mjs upload values(principal, path, files, headers)"
           ],
           "help": {
             "text": "Upload files into the signed-in user's current folder",
@@ -307,6 +325,12 @@
                 "text": "Trusted request headers",
                 "default": "{}",
                 "private": true
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
               }
             ]
           }
@@ -315,7 +339,7 @@
           "name": "delete",
           "execute": [
             "set:path=nvl(body.path, path, '')",
-            "node ${packageDir}/lib/cloud-files-app.mjs delete value(path)"
+            "node ${packageDir}/lib/cloud-files-app.mjs delete values(principal, path)"
           ],
           "help": {
             "text": "Delete a file owned by the signed-in user",
@@ -329,6 +353,12 @@
               {
                 "name": "path",
                 "text": "File path"
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
               }
             ]
           }
@@ -480,6 +510,41 @@
           ],
           "help": {
             "text": "Manage channel shared folders with live Chat access checks",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-resolve",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs resolve values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Resolve attachment references for the authenticated sender",
             "variables": [
               {
                 "name": "principal",

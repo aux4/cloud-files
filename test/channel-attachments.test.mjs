@@ -115,3 +115,14 @@ test("metadata symlinks are refused", async () => {
   await symlink(outside, metadataPath);
   await assert.rejects(store.download({ principal: principal("alice"), channelId: "room", id: uploaded.id }), /not found/);
 });
+
+test('multi-megabyte photos and maximum-size files validate without regex stack exhaustion', async () => {
+  const { store } = await fixture();
+  for (const length of [3460300, MAX_BYTES]) {
+    const bytes = Buffer.alloc(length, 175);
+    const uploaded = await store.upload({ principal: principal('alice'), channelId: 'photos', name: 'IMG_5139.jpeg', type: 'image/jpeg', data: bytes.toString('base64') });
+    assert.equal(uploaded.size, length);
+    const downloaded = await store.download({ principal: principal('alice'), channelId: 'photos', id: uploaded.id });
+    assert.equal(downloaded.body, bytes.toString('base64'));
+  }
+});

@@ -63,6 +63,12 @@
       "method": "POST",
       "path": "/channel-publish",
       "command": "channel-publish"
+    },
+    {
+      "action": "channel-resolve",
+      "method": "POST",
+      "path": "/channel-resolve",
+      "command": "channel-resolve"
     }
   ],
   "routes": {

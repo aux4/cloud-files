@@ -1,3 +1,4 @@
+import {filesConnection, createRemoteAttachmentStore, serviceJson} from './files-connection.mjs';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
@@ -13,6 +14,9 @@ export async function installedChat(home = defaultHome()) {
   } catch { return null; }
 }
 export async function chatCommand(home, action, principal, body = {}) {
+  if (!['channels','attachment-publish','attachment-access'].includes(action)) throw new Error('Unsupported Chat action.');
+  const connection = filesConnection();
+  if (connection.chatUrl) return serviceJson(connection.chatUrl, `/api/apps/chat/action/chat/${action}`, {...(action === 'channels' ? {method:'GET'} : {body}), maxBytes:action === 'channels' ? 8388608 : 65536});
   const chat = await installedChat(home);
   if (!chat || !['channels','attachment-publish','attachment-access'].includes(action)) throw new Error('Chat and Files must be installed on this VM.');
     return await new Promise((accept, reject) => {
@@ -30,11 +34,13 @@ export async function chatCommand(home, action, principal, body = {}) {
     });
 }
 export async function channelFilesService(home = defaultHome()) {
-  if (!await installedChat(home)) throw new Error('Chat and Files must be installed on this VM.');
+  const connection = filesConnection();
+  if (connection.backend === 'cloud') return createRemoteAttachmentStore(connection.url);
+  if (!connection.chatUrl && !await installedChat(home)) throw new Error('Configure a Chat connection or install Chat on this VM.');
   const root = process.env.FILES_ATTACHMENTS_ROOT || join(process.env.CLOUD_STATE_DIR || join(home, 'apps'), 'files', 'channel-attachments');
   return createAttachmentStore({ root, authorize: async ({principal, channelId, attachmentId}) => {
     const result = await chatCommand(home, 'attachment-access', principal, {channelId, attachmentId});
-    if (result.error || result.authorized !== true || result.channelId !== channelId) throw new Error('Conversation or attachment not found, or you are no longer a member.');
+    if (result.error || result.authorized !== true || result.channelId !== channelId || result.userId !== (principal.sub || principal.id)) throw new Error('Conversation or attachment not found, or you are no longer a member.');
     return result;
   }});
 }
