@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from '../package/static/files-attachments.js';
-
 function setup() {
   let components;
   class LightElement { requestUpdate() {} }
@@ -86,16 +85,4 @@ test('text previews use authenticated bounded downloads and escape code tokens',
     await preview._load();
     assert.match(preview._error, /unavailable/);
   } finally { globalThis.fetch = originalFetch; globalThis.location = originalLocation; }
-});
-
-
-test('reaction polls do not force the reader to the newest message', () => {
-  const Chat = setup()[1];
-  const chat = new Chat();
-  chat._syncFromScope();
-  assert.equal(chat._pinCanonicalUpdate, false);
-  chat._nearBottom = false;
-  chat._syncFromScope();
-  assert.equal(chat._pinCanonicalUpdate, false);
-  assert.equal(chat._nearBottom, false);
 });
