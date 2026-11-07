@@ -48,7 +48,7 @@ Folders use a zero-byte `.aux4-folder` marker in object storage. The Files app h
 
 ## Files app experience
 
-The responsive Files app presents storage as a familiar file manager with compact breadcrumbs, search within the current folder, item counts, and consistent file rows on desktop and mobile. File icons are selected from the filename extension for images, documents, spreadsheets, archives, audio, video, and source files, with a generic fallback. Files can be downloaded, selected with the upload action, or dragged onto the file list. Folder creation and file deletion use focused confirmation dialogs.
+The responsive Files app presents storage as a familiar file manager with a desktop folder sidebar, compact breadcrumbs, search within the current folder, and item counts. Switch between list and grid views, or sort by name, last modified time, and size. Upload and new-folder actions remain visible on desktop and mobile. File icons are selected from the filename extension for images, documents, spreadsheets, archives, audio, video, and source files, with a generic fallback. Files can be downloaded, selected with the upload action, or dragged onto the file list. Folder creation and file deletion use focused confirmation dialogs.
 
 Downloads pass through the authenticated Files app and Cloud API, then redirect to a five-minute presigned object URL. The signed URL supplies an attachment filename, supports binary files without UTF-8 conversion, and does not receive the user's Cloud authorization header.
 

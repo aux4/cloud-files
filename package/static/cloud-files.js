@@ -41,12 +41,18 @@ export function register(engine) {
       _messageKind: { state: true },
       _query: { state: true },
       _dialog: { state: true },
-      _dragging: { state: true }
+      _dragging: { state: true },
+      _rootFolders: { state: true },
+      _view: { state: true },
+      _sort: { state: true }
     };
 
     constructor() {
       super();
       this._path = "";
+      this._rootFolders = [];
+      this._view = "list";
+      this._sort = "name";
       this._folders = [];
       this._files = [];
       this._loading = true;
@@ -105,6 +111,7 @@ export function register(engine) {
         const result = await this._run("browse", { path });
         this._path = result.path || "";
         this._folders = Array.isArray(result.folders) ? result.folders : [];
+        if (!this._path) this._rootFolders = [...this._folders];
         this._files = Array.isArray(result.files) ? result.files : [];
         this._query = "";
       } catch (error) {
@@ -262,7 +269,7 @@ export function register(engine) {
     _renderRows(folders, files) {
       return html`
         ${repeat(folders, item => item.path, item => html`
-          <button class="cf-row cf-folder-row" type="button" @click=${() => this._open(item)} ?disabled=${this._loading}>
+          <button class="cf-row cf-folder-row" type="button" aria-label=${`Open ${item.name}`} @click=${() => this._open(item)} ?disabled=${this._loading}>
             <span class="cf-kind cf-folder-icon">${icon("folder")}</span>
             <span class="cf-name"><strong title=${item.name}>${item.name}</strong><span class="cf-mobile-meta">Folder</span></span>
             <span class="cf-size">—</span><span class="cf-modified">—</span><span class="cf-row-action">${icon("chevron")}</span>
@@ -306,10 +313,19 @@ export function register(engine) {
       `;
     }
 
+    _visibleItems(items) {
+      const query = this._query.trim().toLocaleLowerCase();
+      return items.filter(item => !query || item.name.toLocaleLowerCase().includes(query)).slice().sort((a, b) => {
+        if (this._sort === "modified") return (Date.parse(b.lastModified) || 0) - (Date.parse(a.lastModified) || 0) || a.name.localeCompare(b.name);
+        if (this._sort === "size") return (Number(b.size) || 0) - (Number(a.size) || 0) || a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      });
+    }
+
     render() {
       const query = this._query.trim().toLocaleLowerCase();
-      const folders = query ? this._folders.filter(item => item.name.toLocaleLowerCase().includes(query)) : this._folders;
-      const files = query ? this._files.filter(item => item.name.toLocaleLowerCase().includes(query)) : this._files;
+      const folders = this._visibleItems(this._folders);
+      const files = this._visibleItems(this._files);
       const hasItems = this._folders.length > 0 || this._files.length > 0;
       const empty = !this._loading && !hasItems && !this._error;
       const noResults = !this._loading && hasItems && !folders.length && !files.length;
@@ -318,22 +334,36 @@ export function register(engine) {
       return html`
         <style>${styles}</style>
         <main class="cf-shell">
+          <aside class="cf-sidebar" aria-label="File navigation">
+            <div class="cf-brand">${icon("folder")}<span>Files</span></div>
+            <button class=${`cf-nav-item ${!this._path ? "is-active" : ""}`} @click=${() => this._load("")} ?disabled=${this._loading}>${icon("home")}<span>All files</span></button>
+            <div class="cf-nav-heading">FOLDERS</div>
+            <nav class="cf-folder-nav" aria-label="Folders">
+              ${repeat(this._rootFolders.slice().sort((a,b) => a.name.localeCompare(b.name)), folder => folder.path, folder => html`<button class=${`cf-nav-item ${this._path.startsWith(folder.path) ? "is-active" : ""}`} @click=${() => this._load(folder.path)} ?disabled=${this._loading}>${icon("folder")}<span>${folder.name}</span></button>`)}
+            </nav>
+            <div class="cf-sidebar-note">Your files, organized.<span>One place for your work.</span></div>
+          </aside>
+          <div class="cf-workspace">
           <header class="cf-page-header">
-            <div><div class="cf-eyebrow">${icon("shield")} Encrypted cloud storage</div><h1>Files</h1><p>Private files available to you and your aux4 apps.</p></div>
-            <label class=${`cf-button cf-button-primary cf-upload ${this._busy ? "is-disabled" : ""}`}>
-              ${icon("upload")}<span>${this._busy ? "Working…" : "Upload files"}</span>
-              <input type="file" multiple hidden ?disabled=${this._busy} @change=${event => this._uploadFiles(event.target.files, event.target)} />
-            </label>
+            <div><div class="cf-eyebrow">MY WORKSPACE</div><h1>${this._path.split("/").filter(Boolean).pop() || "All files"}</h1><p>${this._path ? "Files and folders in this location." : "Browse and manage your files."}</p></div>
+            <div class="cf-header-actions">
+              <button class="cf-button cf-button-secondary" type="button" @click=${() => this._openDialog({ type: "folder" })} ?disabled=${this._busy}>${icon("folderPlus")}<span>New folder</span></button>
+              <button class="cf-button cf-button-primary" type="button" @click=${() => this.querySelector(".cf-upload-input")?.click()} ?disabled=${this._busy}>${icon("upload")}<span>${this._busy ? "Working…" : "Upload files"}</span></button>
+              <input class="cf-upload-input" aria-label="Upload files" type="file" multiple hidden ?disabled=${this._busy} @change=${event => this._uploadFiles(event.target.files, event.target)} />
+            </div>
           </header>
 
           <section class=${`cf-card ${this._dragging ? "is-dragging" : ""}`} @dragenter=${event => { event.preventDefault(); this._dragging = true; }} @dragover=${event => event.preventDefault()} @dragleave=${event => { if (!event.currentTarget.contains(event.relatedTarget)) this._dragging = false; }} @drop=${event => this._drop(event)}>
             <div class="cf-drop-overlay"><div>${icon("upload")}<strong>Drop files to upload</strong><span>They will be added to this folder</span></div></div>
-            <div class="cf-card-top">${this._renderBreadcrumbs()}<div class="cf-toolbar-actions"><button class="cf-button cf-button-secondary" type="button" @click=${() => this._openDialog({ type: "folder" })} ?disabled=${this._busy}>${icon("folderPlus")}<span>New folder</span></button></div></div>
+            <div class="cf-card-top">${this._renderBreadcrumbs()}<span class="cf-count">${query ? folders.length + files.length : itemCount} item${itemCount === 1 ? "" : "s"}</span></div>
             <div class="cf-list-tools">
               <label class="cf-search">${icon("search")}<span class="cf-sr-only">Search this folder</span><input type="search" placeholder="Search this folder" .value=${this._query} @input=${event => { this._query = event.target.value; }} /></label>
-              <span class="cf-count">${itemCount} item${itemCount === 1 ? "" : "s"}</span>
+              <div class="cf-view-tools">
+                <select aria-label="Sort files" .value=${this._sort} @change=${event => { this._sort = event.target.value; }}><option value="name">Name A–Z</option><option value="modified">Last modified</option><option value="size">Largest first</option></select>
+                <div class="cf-view-switch" aria-label="File view"><button aria-label="List view" aria-pressed=${this._view === "list"} @click=${() => { this._view = "list"; }}>☰</button><button aria-label="Grid view" aria-pressed=${this._view === "grid"} @click=${() => { this._view = "grid"; }}>▦</button></div>
+              </div>
             </div>
-            <div class="cf-list" aria-busy=${this._loading ? "true" : "false"}>
+            <div class=${`cf-list ${this._view === "grid" && !empty && !noResults ? "cf-grid" : ""}`} aria-busy=${this._loading ? "true" : "false"}>
               <div class=${`cf-progress ${this._loading || this._busy ? "is-active" : ""}`}><span></span></div>
               <div class="cf-columns" aria-hidden="true"><span></span><span>Name</span><span>Size</span><span>Modified</span><span></span></div>
               ${this._loading && !hasItems ? html`<div class="cf-skeleton" aria-label="Loading files">${[1, 2, 3].map(() => html`<div class="cf-skeleton-row"><i></i><span></span><em></em></div>`)}</div>`
@@ -343,6 +373,8 @@ export function register(engine) {
                 : this._renderRows(folders, files)}
             </div>
           </section>
+          <div class="cf-bottom-note">Drag files here to upload · Search within the current folder</div>
+          </div>
           ${this._message ? html`<div class=${`cf-toast ${this._messageKind === "error" ? "is-error" : ""}`} role=${this._messageKind === "error" ? "alert" : "status"}><span>${this._message}</span><button type="button" aria-label="Dismiss" @click=${() => { this._message = ""; }}>${icon("close")}</button></div>` : ""}
           ${this._renderDialog()}
         </main>
@@ -366,6 +398,13 @@ export function register(engine) {
     .cf-dialog-backdrop{position:fixed;z-index:40;inset:0;background:rgba(17,24,39,.46);display:grid;place-items:center;padding:20px;backdrop-filter:blur(2px)}.cf-dialog{position:relative;width:min(440px,100%);border-radius:14px;background:#fff;padding:26px;box-shadow:0 24px 60px rgba(16,24,40,.24)}.cf-dialog-close{position:absolute;right:16px;top:16px;border:0;background:transparent;color:#667085;padding:5px;border-radius:6px;cursor:pointer}.cf-dialog-close:hover{background:#f2f4f7}.cf-dialog-close .cf-svg{width:19px;height:19px}.cf-dialog-icon{width:44px;height:44px;border-radius:11px;background:#eef2ff;color:#4f46e5;display:grid;place-items:center;margin-bottom:18px}.cf-dialog-icon.is-danger{background:#fef3f2;color:#d92d20}.cf-dialog h2{font-size:19px;letter-spacing:-.015em;margin:0 32px 8px 0;color:var(--cf-text)}.cf-dialog p{font-size:14px;line-height:1.55;color:#667085;margin:0 0 20px;overflow-wrap:anywhere}.cf-field-label{display:block;font-size:13px;font-weight:600;color:#344054;margin:0 0 6px}.cf-dialog-input{width:100%;height:42px;border:1px solid #d0d5dd;border-radius:8px;padding:0 12px;font:400 14px inherit;outline:0}.cf-dialog-input:focus{border-color:#8178f2;box-shadow:0 0 0 3px rgba(79,70,229,.12)}.cf-dialog-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:24px}
     @media(max-width:720px){.cf-shell{padding:24px 16px 64px}.cf-page-header{align-items:flex-start;margin-bottom:20px}.cf-page-header h1{font-size:31px}.cf-page-header p{font-size:14px}.cf-upload span{display:none}.cf-upload{width:44px;padding:10px}.cf-card{border-radius:12px}.cf-card-top{padding:12px 13px;gap:10px}.cf-toolbar-actions .cf-button span{display:none}.cf-toolbar-actions .cf-button{width:40px;padding:8px}.cf-root span{display:none}.cf-list-tools{height:56px;padding:9px 13px}.cf-search{max-width:none}.cf-columns{display:none}.cf-row{grid-template-columns:36px minmax(0,1fr) 70px;gap:10px;min-height:70px;padding:10px 13px}.cf-size,.cf-modified{display:none}.cf-mobile-meta{display:block}.cf-skeleton{padding:4px 13px}.cf-skeleton-row{grid-template-columns:36px minmax(100px,1fr);height:70px}.cf-skeleton-row em{display:none}.cf-toast{top:auto;bottom:92px;left:16px;right:16px;max-width:none}.cf-dialog{padding:22px}.cf-dialog-actions{display:grid;grid-template-columns:1fr 1fr}.cf-dialog-actions .cf-button{width:100%}}
     @media(max-width:440px){.cf-page-header p{max-width:245px}.cf-count{display:none}.cf-dialog-actions{grid-template-columns:1fr}.cf-dialog-actions .cf-button-primary,.cf-dialog-actions .cf-button-danger{grid-row:1}.cf-dialog-actions .cf-button-secondary{grid-row:2}}
+
+    .cf-shell{--cf-primary:#2563eb;--cf-primary-hover:#1d4ed8;max-width:none;padding:0;margin:0;display:grid;grid-template-columns:216px minmax(0,1fr);height:calc(100dvh - 104px);min-height:420px;background:#f8fafc;border:1px solid #e5eaf1;border-radius:18px;overflow:hidden}
+    .cf-sidebar{display:flex;flex-direction:column;min-height:0;padding:28px 16px 20px;border-right:1px solid #e5eaf1;background:#f3f6fb}.cf-brand{display:flex;align-items:center;gap:12px;padding:0 12px 28px;font-size:23px;font-weight:750;letter-spacing:-.6px;color:#18273f}.cf-brand .cf-svg{width:28px;height:28px;color:#2563eb}.cf-nav-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:0;border-radius:9px;background:transparent;padding:12px;color:#526078;font:500 14px/20px inherit;cursor:pointer}.cf-nav-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cf-nav-item:hover{background:#eaf0f8}.cf-nav-item.is-active{background:#e2ecff;color:#1d4ed8;font-weight:650}.cf-nav-heading{font-size:10px;letter-spacing:1.4px;font-weight:700;color:#8995a6;padding:30px 12px 10px}.cf-folder-nav{overflow:auto;min-height:0}.cf-sidebar-note{margin-top:auto;padding:24px 12px 0;font-size:12px;font-weight:600;color:#526078}.cf-sidebar-note span{display:block;font-size:11px;font-weight:400;color:#8995a6;margin-top:5px}
+    .cf-workspace{min-width:0;overflow:auto;padding:32px 36px;background:#fff}.cf-page-header{align-items:center;margin-bottom:26px}.cf-page-header h1{font-size:28px;line-height:1.3;letter-spacing:-.8px;margin:6px 0;overflow-wrap:anywhere}.cf-page-header p{font-size:13px}.cf-eyebrow{font-size:10px;letter-spacing:1.6px;color:#8190a5}.cf-header-actions{display:flex;gap:10px;flex-shrink:0}.cf-button{font-family:inherit;font-size:13px;font-weight:600;min-height:42px;border-radius:8px}.cf-card{border:0;border-radius:0;box-shadow:none;overflow:visible}.cf-card-top{padding:0 0 16px;min-height:48px;border-bottom:0}.cf-root span{display:inline}.cf-crumb{font-family:inherit;font-size:13px}.cf-list-tools{padding:0 0 22px;border-bottom:0;height:auto;gap:12px;flex-wrap:wrap}.cf-search{max-width:420px;height:42px;background:#f5f7fa;border:1px solid #edf0f5;min-width:180px}.cf-search input{font-family:inherit;font-size:13px}.cf-view-tools{display:flex;gap:12px;align-items:center}.cf-view-tools select{height:36px;border:1px solid #e5eaf1;border-radius:7px;background:#fff;color:#526078;padding:0 8px;font:12px system-ui}.cf-view-switch{display:flex;border:1px solid #e5eaf1;border-radius:7px;padding:3px;gap:2px}.cf-view-switch button{width:32px;height:28px;border:0;border-radius:4px;background:transparent;color:#7c889a;cursor:pointer;font-size:18px}.cf-view-switch button[aria-pressed=true]{background:#eaf1ff;color:#2563eb}.cf-columns,.cf-row{grid-template-columns:34px minmax(100px,1fr) 75px 160px 76px}.cf-columns{background:#f8fafc;border-radius:8px;text-transform:none;letter-spacing:0;font-size:12px}.cf-row{min-height:64px;padding:10px 14px}.cf-name strong{font-weight:500;font-size:13px}.cf-folder-icon{background:#fff5d7;color:#c38a18}.cf-kind{border-radius:8px}.cf-bottom-note{padding:24px 0;color:#98a2b3;font-size:11px}.cf-nav-item:focus-visible,.cf-view-switch button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+    .cf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:16px;min-height:0}.cf-grid .cf-columns{display:none}.cf-grid .cf-row{position:relative;display:flex;align-items:flex-start;flex-direction:column;gap:12px;border:1px solid #e5eaf1;border-radius:12px;padding:18px;min-height:158px}.cf-grid .cf-kind{width:42px;height:42px}.cf-grid .cf-kind .cf-svg{width:25px;height:25px}.cf-grid .cf-name{width:100%}.cf-grid .cf-mobile-meta{display:block;font-size:11px;max-width:100%}.cf-grid .cf-size,.cf-grid .cf-modified{display:none}.cf-grid .cf-file-actions,.cf-grid .cf-row-action{position:absolute;top:18px;right:10px}.cf-grid .cf-skeleton,.cf-grid .cf-state{grid-column:1/-1}
+    @media(max-width:1100px){.cf-shell{grid-template-columns:180px minmax(0,1fr)}.cf-workspace{padding:26px 24px}.cf-header-actions{gap:6px}.cf-page-header{gap:12px}.cf-columns,.cf-row{grid-template-columns:32px minmax(90px,1fr) 65px 76px}.cf-modified{display:none}.cf-columns>span:nth-child(4){display:none}}
+    @media(max-width:760px){.cf-shell{display:block;border:0;border-radius:0;height:calc(100dvh - 55px);min-height:0}.cf-sidebar{display:none}.cf-workspace{height:100%;padding:24px 18px}.cf-page-header{display:block;margin-bottom:22px}.cf-page-header h1{font-size:28px}.cf-page-header p{max-width:none;font-size:13px}.cf-header-actions{margin-top:20px;gap:10px}.cf-header-actions .cf-button{flex:1}.cf-card-top{padding-bottom:12px}.cf-count{display:block;font-size:11px}.cf-list-tools{gap:12px;padding-bottom:18px}.cf-search{flex-basis:100%;max-width:none}.cf-view-tools{width:100%;justify-content:space-between}.cf-view-tools select{flex:1;max-width:200px}.cf-row{grid-template-columns:34px minmax(0,1fr) 76px;gap:10px;padding:12px 0;min-height:72px}.cf-columns{display:none}.cf-size,.cf-modified{display:none}.cf-name strong{font-size:14px}.cf-mobile-meta{display:block;font-size:11px}.cf-icon-button{width:36px;height:40px}.cf-bottom-note{font-size:10px}.cf-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cf-grid .cf-row{padding:14px 12px;min-height:160px}.cf-grid .cf-file-actions{position:static;align-self:flex-end;margin-top:-6px}.cf-grid .cf-row-action{top:22px}.cf-grid .cf-name strong{font-size:12px}.cf-grid .cf-file-actions .cf-icon-button{height:30px;width:30px}.cf-grid .cf-mobile-meta{font-size:10px}}
     @media(prefers-reduced-motion:reduce){.cf-progress span,.cf-skeleton-row>*{animation:none}.cf-button{transition:none}}
   `;
 
