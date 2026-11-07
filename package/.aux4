@@ -1,7 +1,22 @@
 {
   "scope": "aux4",
   "name": "cloud-files",
-  "version": "0.1.0",
+  "version": "0.1.25",
+  "type": "cloud",
+  "cloud": {
+    "deployment": "new-vm",
+    "stateful": true,
+    "machine": {
+      "name": "files",
+      "size": "sm",
+      "disk": 1,
+      "type": "api",
+      "tenantCapabilities": {
+        "packages": false,
+        "webhooks": false
+      }
+    }
+  },
   "description": "Per-user file storage for aux4 Cloud applications",
   "license": "Apache-2.0",
   "tags": [
@@ -10,70 +25,106 @@
     "storage"
   ],
   "dependencies": [
-    "aux4/cloud@1.2.0"
+    "aux4/cloud@>=1.2.15",
+    "aux4/platform@>=1.3.60"
   ],
   "profiles": [
     {
       "name": "main",
       "commands": [
         {
-          "name": "cloud-files",
-          "execute": [
-            "profile:cloud-files"
-          ],
-          "help": {
-            "text": "Manage your per-user files in an aux4 Cloud VM"
-          }
-        }
-      ]
-    },
-    {
-      "name": "cloud-files",
-      "commands": [
-        {
           "name": "list",
           "execute": [
-            "aux4 aux4 cloud files list values(package, scope, path, apiUrl)"
+            "aux4 aux4 cloud files list --package files values(scope, path, apiUrl)"
           ],
           "help": {
             "text": "List files in a cloud VM",
             "variables": [
-              { "name": "package", "text": "VM name" },
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
-              { "name": "path", "text": "Directory path", "default": "" },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+              {
+                "name": "scope",
+                "text": "Scope",
+                "env": "AUX4_CLOUD_SCOPE",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Directory path",
+                "default": ""
+              },
+              {
+                "name": "apiUrl",
+                "text": "Cloud API base URL",
+                "env": "AUX4_CLOUD_API_URL",
+                "default": "https://api.aux4.cloud",
+                "private": true
+              }
             ]
           }
         },
         {
           "name": "get",
           "execute": [
-            "aux4 aux4 cloud files get values(package, scope, path, apiUrl)"
+            "aux4 aux4 cloud files get --package files values(scope, path, apiUrl)"
           ],
           "help": {
             "text": "Read a text file from a cloud VM",
             "variables": [
-              { "name": "package", "text": "VM name" },
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
-              { "name": "path", "text": "File path", "arg": true },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+              {
+                "name": "scope",
+                "text": "Scope",
+                "env": "AUX4_CLOUD_SCOPE",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "File path",
+                "arg": true
+              },
+              {
+                "name": "apiUrl",
+                "text": "Cloud API base URL",
+                "env": "AUX4_CLOUD_API_URL",
+                "default": "https://api.aux4.cloud",
+                "private": true
+              }
             ]
           }
         },
         {
           "name": "upload",
           "execute": [
-            "stdin:aux4 aux4 cloud files upload values(package, scope, path, file, retention, apiUrl)"
+            "stdin:aux4 aux4 cloud files upload --package files values(scope, path, file, retention, apiUrl)"
           ],
           "help": {
             "text": "Upload or replace a file in a cloud VM",
             "variables": [
-              { "name": "package", "text": "VM name" },
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
-              { "name": "path", "text": "Remote file path" },
-              { "name": "file", "text": "Local file path", "default": "" },
-              { "name": "retention", "text": "Retention in days (0 = never expire)", "default": "30" },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+              {
+                "name": "scope",
+                "text": "Scope",
+                "env": "AUX4_CLOUD_SCOPE",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Remote file path"
+              },
+              {
+                "name": "file",
+                "text": "Local file path",
+                "default": ""
+              },
+              {
+                "name": "retention",
+                "text": "Retention in days (0 = never expire)",
+                "default": "30"
+              },
+              {
+                "name": "apiUrl",
+                "text": "Cloud API base URL",
+                "env": "AUX4_CLOUD_API_URL",
+                "default": "https://api.aux4.cloud",
+                "private": true
+              }
             ]
           }
         },
@@ -81,16 +132,483 @@
           "name": "delete",
           "execute": [
             "confirm:Are you sure you want to delete this file?",
-            "aux4 aux4 cloud files delete values(package, scope, path, apiUrl)"
+            "aux4 aux4 cloud files delete --package files values(scope, path, apiUrl)"
           ],
           "help": {
             "text": "Delete a file from a cloud VM",
             "variables": [
-              { "name": "package", "text": "VM name" },
-              { "name": "scope", "text": "Scope", "env": "AUX4_CLOUD_SCOPE" },
-              { "name": "path", "text": "File path" },
-              { "name": "apiUrl", "text": "Cloud API base URL", "env": "AUX4_CLOUD_API_URL", "default": "https://api.aux4.cloud" }
+              {
+                "name": "scope",
+                "text": "Scope",
+                "env": "AUX4_CLOUD_SCOPE",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "File path"
+              },
+              {
+                "name": "apiUrl",
+                "text": "Cloud API base URL",
+                "env": "AUX4_CLOUD_API_URL",
+                "default": "https://api.aux4.cloud",
+                "private": true
+              }
             ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "platform:app",
+      "commands": [
+        {
+          "name": "files",
+          "execute": [
+            "profile:platform:app:files"
+          ],
+          "help": {
+            "text": "Browse your aux4 Cloud files"
+          }
+        }
+      ]
+    },
+    {
+      "name": "platform:app:files",
+      "commands": [
+        {
+          "name": "meta",
+          "execute": [
+            "node ${packageDir}/lib/cloud-files-app.mjs meta value(appFile)"
+          ],
+          "help": {
+            "text": "Return the Files app metadata",
+            "variables": [
+              {
+                "name": "appFile",
+                "text": "Bundled app descriptor",
+                "default": "${packageDir}/app.json",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "ui",
+          "execute": [
+            "node ${packageDir}/lib/cloud-files-app.mjs ui value(appFile)"
+          ],
+          "help": {
+            "text": "Return the Files app routes",
+            "variables": [
+              {
+                "name": "appFile",
+                "text": "Bundled app descriptor",
+                "default": "${packageDir}/app.json",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "browse",
+          "execute": [
+            "set:path=nvl(body.path, path, '')",
+            "node ${packageDir}/lib/cloud-files-app.mjs browse values(principal, path)"
+          ],
+          "help": {
+            "text": "List the signed-in user's files and folders",
+            "variables": [
+              {
+                "name": "body",
+                "text": "Request body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Folder path",
+                "default": ""
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "create-folder",
+          "execute": [
+            "set:path=nvl(body.path, path, '')",
+            "set:name=nvl(body.name, name, '')",
+            "node ${packageDir}/lib/cloud-files-app.mjs create-folder values(principal, path, name)"
+          ],
+          "help": {
+            "text": "Create a folder for the signed-in user",
+            "variables": [
+              {
+                "name": "body",
+                "text": "Request body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Parent folder",
+                "default": ""
+              },
+              {
+                "name": "name",
+                "text": "Folder name"
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "download",
+          "execute": [
+            "node ${packageDir}/lib/cloud-files-app.mjs download values(principal, path)"
+          ],
+          "help": {
+            "text": "Download a file owned by the signed-in user",
+            "variables": [
+              {
+                "name": "path",
+                "text": "File path"
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "upload",
+          "execute": [
+            "set:path=nvl(body.path, path, '')",
+            "set:files=nvl(body.file, files, '[]')",
+            "node ${packageDir}/lib/cloud-files-app.mjs upload values(principal, path, files, headers)"
+          ],
+          "help": {
+            "text": "Upload files into the signed-in user's current folder",
+            "variables": [
+              {
+                "name": "body",
+                "text": "Multipart request body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "Target folder",
+                "default": ""
+              },
+              {
+                "name": "files",
+                "text": "Uploaded file parts",
+                "default": "[]",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "Trusted request headers",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "delete",
+          "execute": [
+            "set:path=nvl(body.path, path, '')",
+            "node ${packageDir}/lib/cloud-files-app.mjs delete values(principal, path)"
+          ],
+          "help": {
+            "text": "Delete a file owned by the signed-in user",
+            "variables": [
+              {
+                "name": "body",
+                "text": "Request body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "path",
+                "text": "File path"
+              },
+              {
+                "name": "principal",
+                "text": "Authenticated request principal",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-upload",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs upload values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Upload a channel attachment after checking current membership",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-download",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs download values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Download a channel attachment after checking current membership",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-folders",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs folders values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Manage channel shared folders with live Chat access checks",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-browse",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs browse values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Manage channel shared folders with live Chat access checks",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-publish",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs publish values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Manage channel shared folders with live Chat access checks",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel-resolve",
+          "execute": [
+            "node ${packageDir}/lib/channel-files-cli.mjs resolve values(principal, body, query, aux4HomeDir, headers)"
+          ],
+          "help": {
+            "text": "Resolve attachment references for the authenticated sender",
+            "variables": [
+              {
+                "name": "principal",
+                "text": "principal",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "body",
+                "text": "body",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "query",
+                "text": "query",
+                "default": "{}",
+                "private": true
+              },
+              {
+                "name": "headers",
+                "text": "headers",
+                "default": "{}",
+                "private": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "platform:component",
+      "commands": [
+        {
+          "name": "files-attachments",
+          "execute": [
+            "profile:platform:component:files-attachments"
+          ],
+          "help": {
+            "text": "Shared Files chat attachment component"
+          }
+        }
+      ]
+    },
+    {
+      "name": "platform:component:files-attachments",
+      "commands": [
+        {
+          "name": "meta",
+          "execute": [
+            "cat ${packageDir}/component.json"
+          ],
+          "help": {
+            "text": "Describe the FilesChat component"
+          }
+        },
+        {
+          "name": "bundle",
+          "execute": [
+            "cat ${packageDir}/static/files-attachments.js"
+          ],
+          "help": {
+            "text": "Emit the FilesChat component bundle"
           }
         }
       ]
