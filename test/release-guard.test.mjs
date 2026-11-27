@@ -9,3 +9,10 @@ test('accepts the Hub production identity and metered shape', () => assert.equal
 test('rejects fixed monthly pricing', () => assert.throws(() => validateProductionDescriptor(identity, { schemaVersion: 1, plans: { small: { price: { monthly: 1 } } } }), /fixed monthly pricing/));
 test('rejects an unset production rate', () => assert.throws(() => validateProductionDescriptor(identity, { schemaVersion: 1, plans: { small: { price: {} } } }), /approved metered descriptor/));
 test('rejects non-public or non-cloud identity', () => assert.throws(() => validateProductionDescriptor({ ...identity, private: true }, metered), /public cloud/));
+
+test("public Files requires the system Platform host", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const manifest = JSON.parse(await readFile(new URL("../package/.aux4", import.meta.url), "utf8"));
+  assert.equal(manifest.repository, "public");
+  assert.deepEqual(manifest.dependencies.filter(ref => /(?:^|:)aux4\/platform(?:@|$)/.test(ref)), ["system:aux4/platform@>=1.3.60"]);
+});

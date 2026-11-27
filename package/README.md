@@ -19,6 +19,8 @@ The selected paid tier replaces the included allowance; allowances do not stack.
 
 ## Usage
 
+The public Files package runs on the Cloud-managed `system:aux4/platform` host. A fresh installation outside Cloud requires authorized system-repository access or a compatible Platform host already installed by a trusted administrator.
+
 Open the `files` VM URL to use the built-in Files app. The app is served by `aux4/platform` from this same package and lets each signed-in user:
 
 - browse their own folders;
