@@ -34,6 +34,8 @@ jobs:
         uses: aux4/action@d20926069ceafd632f4f2c6d1ff952005cc91486 # v1
         with:
           command: test
+      - name: Require approved metered Cloud Files plans
+        run: node scripts/validate-production-release.mjs
       - name: Validate public package metadata and plans
         shell: bash
         run: |
@@ -50,9 +52,7 @@ jobs:
             throw new Error(`invalid package version: ${metadata.version}`);
           }
           const names = Object.keys(plans.plans || {});
-          if (names.length !== 3 || !['small', 'medium', 'large'].every(name => names.includes(name))) {
-            throw new Error(`expected exactly small, medium, and large plans; got ${names.join(', ')}`);
-          }
+          if (names.length === 0) throw new Error('at least one production plan is required');
           if (plans.schemaVersion !== 1 || !plans.metrics || typeof plans.metrics !== 'object' || Object.keys(plans.metrics).length !== 1) {
             throw new Error('plans.json must contain schemaVersion 1 and one metric');
           }
@@ -61,20 +61,12 @@ jobs:
           if (metric.type !== 'gauge' || unit.base !== 'byte' || unit.display !== 'GB' || unit.baseUnitsPerDisplayUnit !== 1000000000 || !Number.isSafeInteger(unit.decimals) || unit.decimals < 0) {
             throw new Error('storage-bytes must declare a normalized safe byte/GB unit');
           }
-          const toUsdCents = amount => {
-            if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) throw new Error('monthly price must be a positive finite number');
-            const cents = Math.round(amount * 100);
-            if (!Number.isSafeInteger(cents) || cents <= 0 || cents / 100 !== amount) throw new Error(`monthly price is not an exact USD-cent amount: ${amount}`);
-            return cents;
-          };
-          if (toUsdCents(0.29) !== 29) throw new Error('USD-cent conversion failed positive round-trip');
           for (const [name, plan] of Object.entries(plans.plans)) {
-            const monthly = plan.price && plan.price.monthly;
-            const limit = plan.limits && plan.limits['storage-bytes'];
-            const cents = toUsdCents(monthly);
-            const bytes = limit * unit.baseUnitsPerDisplayUnit;
-            if (!Number.isFinite(limit) || limit <= 0 || !Number.isSafeInteger(bytes)) {
-              throw new Error(`unsafe normalized metadata for plan ${name}`);
+            const price = plan.price;
+            if (!price || Object.hasOwn(price, 'monthly')) throw new Error(`plan ${name} must use GB-month metering, not fixed monthly pricing`);
+            const meter = price.metered;
+            if (!meter || Object.keys(meter).sort().join(',') !== 'includedBytes,microCentsPerUnit,unit' || meter.unit !== 'gb-month' || !Number.isSafeInteger(meter.microCentsPerUnit) || meter.microCentsPerUnit <= 0 || !Number.isSafeInteger(meter.includedBytes) || meter.includedBytes < 0) {
+              throw new Error(`plan ${name} must contain the approved GB-month metered descriptor; production rate is not set`);
             }
           }
           const remote = execFileSync('git', ['config', '--get', 'remote.origin.url'], {encoding: 'utf8'}).trim();
