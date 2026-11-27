@@ -1,5 +1,8 @@
 name: Publish Package
 
+# Production publication is a reviewed-main operation.  The manual trigger is
+# intentionally retained for release-level selection, but the job guard below
+# makes a dispatch from any other ref a no-op.
 on:
   workflow_dispatch:
     inputs:
@@ -21,15 +24,74 @@ permissions:
   contents: write
 
 jobs:
+  preflight:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout reviewed main
+        uses: actions/checkout@v6
+      - name: Run package tests without publishing
+        uses: aux4/action@d20926069ceafd632f4f2c6d1ff952005cc91486 # v1
+        with:
+          command: test
+      - name: Validate public package metadata and plans
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const {execFileSync} = require('node:child_process');
+          const metadata = JSON.parse(fs.readFileSync('package/.aux4', 'utf8'));
+          const plans = JSON.parse(fs.readFileSync('package/plans.json', 'utf8'));
+          if (metadata.scope !== 'aux4' || metadata.name !== 'cloud-files') {
+            throw new Error(`unexpected package identity: ${metadata.scope}/${metadata.name}`);
+          }
+          if (!/^\d+\.\d+\.\d+$/.test(metadata.version)) {
+            throw new Error(`invalid package version: ${metadata.version}`);
+          }
+          const names = Object.keys(plans.plans || {});
+          if (names.length !== 3 || !['small', 'medium', 'large'].every(name => names.includes(name))) {
+            throw new Error(`expected exactly small, medium, and large plans; got ${names.join(', ')}`);
+          }
+          const remote = execFileSync('git', ['config', '--get', 'remote.origin.url'], {encoding: 'utf8'}).trim();
+          const publicRemotes = new Set(['https://github.com/aux4/cloud-files', 'git@github.com:aux4/cloud-files']);
+          if (!publicRemotes.has(remote.replace(/\.git$/, ''))) {
+            throw new Error(`repository is not the public aux4/cloud-files repo: ${remote}`);
+          }
+          console.log(`preflight ok: ${metadata.scope}/${metadata.name}@${metadata.version}; plans=${names.join(',')}; remote=${remote}`);
+          NODE
+
   publish:
+    needs: preflight
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: aux4/action@v1
+      - name: Mint public aux4 publisher token
+        id: mint
+        env:
+          CLIENT_ID: ${{ secrets.AUX4_PUBLISHER_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.AUX4_PUBLISHER_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then
+            echo '::error::AUX4_PUBLISHER_CLIENT_ID/SECRET are required for public aux4 publication'
+            exit 1
+          fi
+          TOKEN=$(curl -sf -u "$CLIENT_ID:$CLIENT_SECRET" \
+            -d grant_type=client_credentials \
+            'https://sso.aux4.io/token' | jq -r '.access_token // empty')
+          if [ -z "$TOKEN" ]; then
+            echo '::error::publisher client_credentials mint returned no access_token'
+            exit 1
+          fi
+          echo '::add-mask::$TOKEN'
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+      - uses: aux4/action@d20926069ceafd632f4f2c6d1ff952005cc91486 # v1
         with:
           command: publish
           level: ${{ inputs.level }}
-          aux4_token: ${{ secrets.AUX4_ACCESS_TOKEN }}
+          aux4_token: ${{ steps.mint.outputs.token }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
