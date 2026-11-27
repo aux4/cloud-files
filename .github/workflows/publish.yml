@@ -58,15 +58,22 @@ jobs:
           }
           const metric = plans.metrics['storage-bytes'];
           const unit = metric && metric.unit;
-          if (metric.type !== 'gauge' || unit.base !== 'byte' || unit.display !== 'GB' || !Number.isSafeInteger(unit.baseUnitsPerDisplayUnit) || unit.baseUnitsPerDisplayUnit <= 0 || !Number.isSafeInteger(unit.decimals) || unit.decimals < 0) {
+          if (metric.type !== 'gauge' || unit.base !== 'byte' || unit.display !== 'GB' || unit.baseUnitsPerDisplayUnit !== 1000000000 || !Number.isSafeInteger(unit.decimals) || unit.decimals < 0) {
             throw new Error('storage-bytes must declare a normalized safe byte/GB unit');
           }
+          const toUsdCents = amount => {
+            if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) throw new Error('monthly price must be a positive finite number');
+            const cents = Math.round(amount * 100);
+            if (!Number.isSafeInteger(cents) || cents <= 0 || cents / 100 !== amount) throw new Error(`monthly price is not an exact USD-cent amount: ${amount}`);
+            return cents;
+          };
+          if (toUsdCents(0.29) !== 29) throw new Error('USD-cent conversion failed positive round-trip');
           for (const [name, plan] of Object.entries(plans.plans)) {
             const monthly = plan.price && plan.price.monthly;
             const limit = plan.limits && plan.limits['storage-bytes'];
-            const cents = monthly * 100;
+            const cents = toUsdCents(monthly);
             const bytes = limit * unit.baseUnitsPerDisplayUnit;
-            if (!Number.isFinite(monthly) || monthly < 0 || !Number.isSafeInteger(cents) || !Number.isFinite(limit) || limit <= 0 || !Number.isSafeInteger(bytes)) {
+            if (!Number.isFinite(limit) || limit <= 0 || !Number.isSafeInteger(bytes)) {
               throw new Error(`unsafe normalized metadata for plan ${name}`);
             }
           }
