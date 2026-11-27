@@ -109,7 +109,7 @@ jobs:
           fi
           printf '::add-mask::%s\n' "$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-      - uses: aux4/action@4121c75c0357ff269de0ee55307b5ae2324d0987
+      - uses: aux4/action@56d162126dc4895f0ae92c1a21029bda2e218ab8
         with:
           command: publish
           strict_lineage: 'true'
