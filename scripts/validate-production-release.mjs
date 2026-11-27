@@ -7,6 +7,10 @@ export function validateProductionDescriptor(metadata, plans) {
   if (metadata.type !== 'cloud' || metadata.repository !== 'public' || metadata.private !== false) {
     throw new Error('package must be a public cloud package');
   }
+  const hosts = (metadata.dependencies || []).filter(ref => /(?:^|:)aux4\/platform(?:@|$)/.test(ref));
+  if (hosts.length !== 1 || hosts[0] !== 'system:aux4/platform@1.3.153') {
+    throw new Error('Files requires the Cloud builder host system:aux4/platform@1.3.153');
+  }
   if (!plans || plans.schemaVersion !== 1 || !plans.plans || typeof plans.plans !== 'object') {
     throw new Error('plans.json must contain schemaVersion 1 and plans');
   }
