@@ -109,9 +109,11 @@ jobs:
           fi
           printf '::add-mask::%s\n' "$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-      - uses: aux4/action@d20926069ceafd632f4f2c6d1ff952005cc91486 # v1
+      - uses: aux4/action@4121c75c0357ff269de0ee55307b5ae2324d0987
         with:
           command: publish
+          strict_lineage: 'true'
+          expected_source_sha: ${{ github.sha }}
           level: ${{ inputs.level }}
           aux4_token: ${{ steps.mint.outputs.token }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
