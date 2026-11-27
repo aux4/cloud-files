@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Checkout reviewed main
         uses: actions/checkout@v6
+      - name: Run Files regression suite
+        run: node --test test/*.test.mjs
       - name: Run package tests without publishing
         uses: aux4/action@d20926069ceafd632f4f2c6d1ff952005cc91486 # v1
         with:
