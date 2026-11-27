@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   preflight:
@@ -80,6 +80,8 @@ jobs:
           NODE
 
   publish:
+    permissions:
+      contents: write
     needs: preflight
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -105,7 +107,7 @@ jobs:
             echo '::error::publisher client_credentials mint returned no access_token'
             exit 1
           fi
-          echo '::add-mask::$TOKEN'
+          printf '::add-mask::%s\n' "$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
       - uses: aux4/action@d20926069ceafd632f4f2c6d1ff952005cc91486 # v1
         with:
