@@ -43,8 +43,8 @@ jobs:
           const {execFileSync} = require('node:child_process');
           const metadata = JSON.parse(fs.readFileSync('package/.aux4', 'utf8'));
           const plans = JSON.parse(fs.readFileSync('package/plans.json', 'utf8'));
-          if (metadata.scope !== 'aux4' || metadata.name !== 'cloud-files') {
-            throw new Error(`unexpected package identity: ${metadata.scope}/${metadata.name}`);
+          if (metadata.scope !== 'aux4' || metadata.name !== 'cloud-files' || metadata.type !== 'cloud' || metadata.repository !== 'public' || metadata.private !== false) {
+            throw new Error(`unexpected public cloud package manifest: ${metadata.scope}/${metadata.name}, type=${metadata.type}, repository=${metadata.repository}, private=${metadata.private}`);
           }
           if (!/^\d+\.\d+\.\d+$/.test(metadata.version)) {
             throw new Error(`invalid package version: ${metadata.version}`);
@@ -52,6 +52,23 @@ jobs:
           const names = Object.keys(plans.plans || {});
           if (names.length !== 3 || !['small', 'medium', 'large'].every(name => names.includes(name))) {
             throw new Error(`expected exactly small, medium, and large plans; got ${names.join(', ')}`);
+          }
+          if (plans.schemaVersion !== 1 || !plans.metrics || typeof plans.metrics !== 'object' || Object.keys(plans.metrics).length !== 1) {
+            throw new Error('plans.json must contain schemaVersion 1 and one metric');
+          }
+          const metric = plans.metrics['storage-bytes'];
+          const unit = metric && metric.unit;
+          if (metric.type !== 'gauge' || unit.base !== 'byte' || unit.display !== 'GB' || !Number.isSafeInteger(unit.baseUnitsPerDisplayUnit) || unit.baseUnitsPerDisplayUnit <= 0 || !Number.isSafeInteger(unit.decimals) || unit.decimals < 0) {
+            throw new Error('storage-bytes must declare a normalized safe byte/GB unit');
+          }
+          for (const [name, plan] of Object.entries(plans.plans)) {
+            const monthly = plan.price && plan.price.monthly;
+            const limit = plan.limits && plan.limits['storage-bytes'];
+            const cents = monthly * 100;
+            const bytes = limit * unit.baseUnitsPerDisplayUnit;
+            if (!Number.isFinite(monthly) || monthly < 0 || !Number.isSafeInteger(cents) || !Number.isFinite(limit) || limit <= 0 || !Number.isSafeInteger(bytes)) {
+              throw new Error(`unsafe normalized metadata for plan ${name}`);
+            }
           }
           const remote = execFileSync('git', ['config', '--get', 'remote.origin.url'], {encoding: 'utf8'}).trim();
           const publicRemotes = new Set(['https://github.com/aux4/cloud-files', 'git@github.com:aux4/cloud-files']);
