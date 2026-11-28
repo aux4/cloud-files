@@ -1,6 +1,6 @@
 # aux4/cloud-files
 
-Per-user file storage for aux4 Cloud applications. A scope chooses the storage policy once; each authenticated user receives and consumes an independent allocation.
+File storage for aux4 Cloud applications. Each signed-in user can manage their own files.
 
 This is a hosted Cloud package. Deploy it to a dedicated VM from aux4 Hub; it is not available as a local package download.
 
@@ -8,16 +8,17 @@ This is a hosted Cloud package. Deploy it to a dedicated VM from aux4 Hub; it is
 
 Deploy from aux4 Hub. The package creates one managed VM named `files` with fixed runtime resources. There is no separate VM configuration or regular aux4 Cloud VM charge, and the VM cannot accept additional packages or user-managed webhooks.
 
-## Plans
+## Storage billing
 
-- aux4 Cloud subscribers: 1 GB per user is included by the Cloud plan.
-- Small: 10 GB per user for `$1/month`.
-- Medium: 50 GB per user for `$5/month`.
-- Large: 100 GB per user for `$10/month`.
+The planned production meter charges the scope for the time its data occupies storage. It combines personal files, VM storage and shared files into one balance. A scope owner can use the ownership breakdown to investigate usage. Adding a member creates no separate storage subscription.
 
-The selected paid tier replaces the included allowance; allowances do not stack. These are dev-market validation prices, not final production pricing.
+One decimal GB equals 1,000,000,000 bytes. The candidate plan includes 1 GB per scope and charges USD $0.10 per decimal GB-month above that allowance. For example, storing 4 GB for half a billing month and zero for the other half costs $0.15 for storage. Download terms are pending review.
+
+The existing dev catalog uses fixed monthly tiers with independent user quotas. Those prices apply only to the legacy dev package.
 
 ## Usage
+
+Files is listed publicly in the Hub and runs on the Cloud-managed `system:aux4/platform` host. Deploy Files through aux4 Cloud. The builder retrieves the Files archive and installs Platform using its authorized system reader. Developers testing a Files source checkout also need an authorized system reader or a compatible Platform host installed from the system repository.
 
 Open the `files` VM URL to use the built-in Files app. The app is served by `aux4/platform` from this same package and lets each signed-in user:
 
@@ -38,7 +39,7 @@ aux4 cloud files delete notes/today.txt
 
 Set `AUX4_CLOUD_SCOPE` to select the scope. The VM name is always `files`.
 
-## Quota model
+## Current dev upload limits
 
 Storage is a current gauge, not a monthly event counter. Plans are authored in decimal GB (`1 GB = 1,000,000,000 bytes`), while telemetry and enforcement use exact bytes. The Cloud API derives identity from the signed-in subject, measures the user's objects across every VM in the scope, and refuses an upload when its resulting total would exceed the active plan. Reads and deletes remain available after cancellation or expiry.
 

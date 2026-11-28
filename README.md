@@ -2,9 +2,9 @@
 
 Source for the paid aux4 Cloud Files package. The publishable package is in [`package/`](package/).
 
-Cloud Files provides reusable per-user file storage for aux4 Cloud applications. Quotas are assigned to a scope but measured and enforced independently for every authenticated user.
+The production release targets one storage bill per scope, prorated by decimal GB and elapsed time. Personal, VM and shared data contribute to the same balance. User and VM ownership provide an investigative breakdown. The candidate plan includes 1 GB per scope and charges USD $0.10 per decimal GB-month above that allowance.
 
-The dev package exposes Small (10 GB), Medium (50 GB), and Large (100 GB) tiers. aux4 Cloud plans separately include 1 GB per user. Plan values are authored in decimal GB and projected to exact bytes for telemetry and enforcement.
+The published dev version uses legacy fixed tiers. The candidate plan remains gated on final download terms and approval of the exact terms file.
 
 ### Local and remote conversation attachments
 
