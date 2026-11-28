@@ -109,9 +109,10 @@ jobs:
           fi
           printf '::add-mask::%s\n' "$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-      - uses: aux4/action@fe4f96b6f0dbdb08906baadb07c7602cd4c62e2b
+      - uses: aux4/action@b21395c88ac9df0fc7d545ec2fc0fe19a357c7e6
         with:
           command: publish
+          aux4_image: ${{ vars.AUX4_PUBLISHER_IMAGE }}
           strict_lineage: 'true'
           expected_source_sha: ${{ github.sha }}
           level: ${{ inputs.level }}
