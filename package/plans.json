@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "metrics": {
     "storage-bytes": {
-      "label": "Cloud file storage per user",
+      "label": "Cloud Files storage for the scope",
       "type": "gauge",
       "unit": {
         "base": "byte",
@@ -13,28 +13,16 @@
     }
   },
   "plans": {
-    "small": {
+    "usage": {
       "price": {
-        "monthly": 1
+        "metered": {
+          "unit": "gb-month",
+          "microCentsPerUnit": 10000000,
+          "includedBytes": 1000000000
+        }
       },
       "limits": {
-        "storage-bytes": 10
-      }
-    },
-    "medium": {
-      "price": {
-        "monthly": 5
-      },
-      "limits": {
-        "storage-bytes": 50
-      }
-    },
-    "large": {
-      "price": {
-        "monthly": 10
-      },
-      "limits": {
-        "storage-bytes": 100
+        "storage-bytes": -1
       }
     }
   }

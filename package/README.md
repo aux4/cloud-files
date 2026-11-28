@@ -12,7 +12,7 @@ Deploy from aux4 Hub. The package creates one managed VM named `files` with fixe
 
 The planned production meter charges the scope for the time its data occupies storage. It combines personal files, VM storage and shared files into one balance. A scope owner can use the ownership breakdown to investigate usage. Adding a member creates no separate storage subscription.
 
-One decimal GB equals 1,000,000,000 bytes. For example, storing 4 GB for half a billing month contributes 2 GB-months before any scope allowance. The production rate and allowance are pending approval.
+One decimal GB equals 1,000,000,000 bytes. The candidate plan includes 1 GB per scope and charges USD $0.10 per decimal GB-month above that allowance. For example, storing 4 GB for half a billing month and zero for the other half costs $0.15 for storage. Download terms are pending review.
 
 The existing dev catalog uses fixed monthly tiers with independent user quotas. Those prices apply only to the legacy dev package.
 

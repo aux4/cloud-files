@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateProductionDescriptor } from '../scripts/validate-production-release.mjs';
+import { readFileSync } from 'node:fs';
+import { requireApprovedTerms, validateProductionDescriptor } from '../scripts/validate-production-release.mjs';
 
 const identity = { scope: 'aux4', name: 'cloud-files', type: 'cloud', repository: 'public', private: false, dependencies: ['system:aux4/platform@1.3.153'] };
-const metered = { schemaVersion: 1, plans: { small: { price: { metered: { unit: 'gb-month', microCentsPerUnit: 125000, includedBytes: 0 } } } } };
+const metered = JSON.parse(readFileSync(new URL('../package/plans.json', import.meta.url), 'utf8'));
 
 test('accepts the Hub production identity and metered shape', () => assert.equal(validateProductionDescriptor(identity, metered), true));
 test('rejects fixed monthly pricing', () => assert.throws(() => validateProductionDescriptor(identity, { schemaVersion: 1, plans: { small: { price: { monthly: 1 } } } }), /fixed monthly pricing/));
@@ -22,4 +23,17 @@ test('rejects public, ranged and duplicate Platform host dependencies', () => {
     ['system:aux4/platform@1.3.153', 'public:aux4/platform@1.3.153']]) {
     assert.throws(() => validateProductionDescriptor({ ...identity, dependencies }, metered), /Cloud builder host/);
   }
+});
+
+test('candidate price cannot change rate or allowance silently', () => {
+  for (const key of ['microCentsPerUnit', 'includedBytes']) {
+    const candidate = structuredClone(metered);
+    candidate.plans.usage.price.metered[key]++;
+    assert.throws(() => validateProductionDescriptor(identity, candidate), /scope usage plan/);
+  }
+});
+
+test('draft download policy blocks production publication', () => {
+  const draft = readFileSync(new URL('../package/terms.md', import.meta.url));
+  assert.throws(() => requireApprovedTerms(draft), /reviewed download terms/);
 });

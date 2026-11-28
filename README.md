@@ -2,9 +2,9 @@
 
 Source for the paid aux4 Cloud Files package. The publishable package is in [`package/`](package/).
 
-The production release targets one storage bill per scope, prorated by decimal GB and elapsed time. Personal, VM and shared data contribute to the same balance. User and VM ownership provide an investigative breakdown. The production rate and allowance await approval.
+The production release targets one storage bill per scope, prorated by decimal GB and elapsed time. Personal, VM and shared data contribute to the same balance. User and VM ownership provide an investigative breakdown. The candidate plan includes 1 GB per scope and charges USD $0.10 per decimal GB-month above that allowance.
 
-The current dev descriptor still uses fixed tiers and per-user limits. The production workflow rejects that descriptor.
+The published dev version uses legacy fixed tiers. The candidate plan remains gated on final download terms and approval of the exact terms file.
 
 ### Local and remote conversation attachments
 

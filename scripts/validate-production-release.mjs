@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
 export function validateProductionDescriptor(metadata, plans) {
@@ -39,12 +40,28 @@ export function validateProductionDescriptor(metadata, plans) {
       throw new Error(`plan ${name} must set a non-negative integer includedBytes`);
     }
   }
+  const usage = plans.plans.usage;
+  if (entries.length !== 1 || !usage || usage.price.metered.microCentsPerUnit !== 10_000_000 ||
+      usage.price.metered.includedBytes !== 1_000_000_000 || usage.limits?.['storage-bytes'] !== -1) {
+    throw new Error('expected one scope usage plan at $0.10 per decimal GB-month above the included 1 GB');
+  }
   return true;
+}
+
+// Set only after the final download policy and full customer terms are reviewed.
+const approvedTermsSha256 = null;
+
+export function requireApprovedTerms(terms) {
+  const hash = createHash('sha256').update(terms).digest('hex');
+  if (hash !== approvedTermsSha256) {
+    throw new Error('production release requires reviewed download terms and approval of the exact package/terms.md');
+  }
 }
 
 if (process.argv[1] === new URL(import.meta.url).pathname) {
   const metadata = JSON.parse(await readFile('package/.aux4', 'utf8'));
   const plans = JSON.parse(await readFile('package/plans.json', 'utf8'));
   validateProductionDescriptor(metadata, plans);
-  console.log('production release descriptor is valid');
+  requireApprovedTerms(await readFile('package/terms.md'));
+  console.log('production release descriptor and terms are valid');
 }
